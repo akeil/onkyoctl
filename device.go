@@ -15,16 +15,16 @@ type Device struct {
     Host string
     Port int
     conn net.Conn
-    send chan *EISCPMessage
-    recv chan *EISCPMessage
+    send chan ISCPCommand
+    recv chan ISCPCommand
 }
 
 func NewDevice(host string) Device {
     return Device{
         Host: host,
         Port: defaultPort,
-        send: make(chan *EISCPMessage, 16),
-        recv: make(chan *EISCPMessage, 16),
+        send: make(chan ISCPCommand, 16),
+        recv: make(chan ISCPCommand, 16),
     }
 }
 
@@ -49,26 +49,26 @@ func (d *Device) Stop() {
 }
 
 func (d *Device) SendCommand(command ISCPCommand) {
-    msg := NewEISCPMessage(command)
-    d.send <- msg
+    d.send <- command
 }
 
 func (d *Device) loop() {
     for {
         select {
-        case msg, more := <-d.recv:
+        case command, more := <-d.recv:
             if more {
-                d.doReceive(msg)
+                d.doReceive(command)
             }
-        case msg, more := <-d.send:
+        case command, more := <-d.send:
             if more {
-                d.doSend(msg)
+                d.doSend(command)
             }
         }
     }
 }
 
-func (d *Device) doSend(msg *EISCPMessage) {
+func (d *Device) doSend(command ISCPCommand) {
+    msg := NewEISCPMessage(command)
     log.Printf("Send message: %v", msg)
     numWritten, err := d.conn.Write(msg.Raw())
     if err != nil {
@@ -78,8 +78,8 @@ func (d *Device) doSend(msg *EISCPMessage) {
     }
 }
 
-func (d *Device) doReceive(msg *EISCPMessage) {
-    log.Printf("Recv message: %v", msg)
+func (d *Device) doReceive(command ISCPCommand) {
+    log.Printf("Recv message: %v", command)
     // TODO: callback
 }
 
@@ -110,11 +110,9 @@ func (d *Device) disconnect() {
 }
 
 func (d *Device) read() {
-    data := make([]byte, 0)
     for {
-        // read up to N bytes ...
-        buf := make([]byte, 16)
-        log.Printf("reading ...")
+        // read message header
+        buf := make([]byte, headerSize)
         numRead, err := d.conn.Read(buf)
         if err != nil {
             log.Printf("Read error: %v", err)
@@ -122,24 +120,28 @@ func (d *Device) read() {
             return
         }
         log.Printf("Read: %v - %v", numRead, buf)
-        // ... combine with what we already have
-        data = append(data, buf[:numRead]...)
-
-        //TODO: make a loop until all of data is parsed
-
-        // parse "consumes" some of our data
-        msg, err := ParseEISCP(data)
-        consumed := 0
+        _, payloadSize, err := ParseHeader(buf)
         if err != nil {
-            // parse error
-            consumed = len(data)
-        } else {
-            d.recv <- msg
-            // TODO: the parser needs to tell us
-            consumed = len(data)
+            log.Printf("bad message data: %v", err)
+            continue
         }
 
-        // keep the remainder
-        data = data[consumed:]
+        // read message payload
+        payload := make([]byte, payloadSize)
+        numPayload, err := d.conn.Read(payload)
+        if err != nil {
+            log.Printf("Read error: %v", err)
+            // host closes (EOF) when another client connects?
+            return
+        }
+        log.Printf("Read %v payload bytes", numPayload)
+
+        iscp, err := ParseISCP(payload)
+        if err != nil {
+            log.Printf("invalid ISCP message: %v", err)
+            continue
+        }
+        d.recv <- iscp.Command()
+
     }
 }

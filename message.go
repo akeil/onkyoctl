@@ -119,37 +119,17 @@ func (e *EISCPMessage) Raw() []byte {
 
 // ParseEISCP reads an eISCP message from a byte array.
 func ParseEISCP(data []byte) (*EISCPMessage, error) {
-    // we need at least 12 byte
-    // - 4 bytes "magic"
-    // - 4 bytes header length
-    // - 4 bytes payload length
-    if len(data) < 12 {
-        return nil, errors.New("invalid eISCP message (too short)")
+    headerSize, payloadSize, err := ParseHeader(data)
+    if err != nil {
+        return nil, err
     }
 
-    // check the "magic"
-    iOk := data[0] == byte('I')
-    sOk := data[1] == byte('S')
-    cOk := data[2] == byte('C')
-    pOk := data[3] == byte('P')
-    magicOk := iOk && sOk && cOk && pOk
-    if !magicOk {
-        return nil, errors.New("missing magic byte sequence in message header")
+    totalSize := headerSize + payloadSize
+    if len(data) < totalSize {
+        return nil, errors.New("size mismatch message too short")
     }
 
-    end := binary.BigEndian
-    headerSize := end.Uint32(data[4:8])
-    payloadSize := end.Uint32(data[8:12])
-    indicatedSize := headerSize + payloadSize
-    if len(data) < int(indicatedSize) {
-        return nil, errors.New("size mismatch, message shorter than indicated")
-    }
-
-    header := data[0:headerSize]
-    log.Printf("parsed header: %v", header)
-    payload := data[headerSize:headerSize + payloadSize]
-    log.Printf("parsed payload: %v", header)
-
+    payload := data[headerSize:totalSize]
     iscp, err := ParseISCP(payload)
     if err != nil {
         return nil, err
@@ -181,9 +161,8 @@ func ParseHeader(data []byte) (int, int, error){
     end := binary.BigEndian
     headerSize := end.Uint32(data[4:8])
     payloadSize := end.Uint32(data[8:12])
-    indicatedSize := headerSize + payloadSize
-    if len(data) < int(indicatedSize) {
-        return 0, 0, errors.New("size mismatch, message shorter than indicated")
+    if len(data) < int(headerSize) {
+        return 0, 0, errors.New("size mismatch, message shorter than indicated header size")
     }
 
     // note we might parse the last 4 bytes to get the version
