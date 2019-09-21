@@ -1,7 +1,7 @@
 package onkyoctl
 
 import (
-    "reflect"
+	"reflect"
 	"testing"
 )
 
