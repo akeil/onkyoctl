@@ -15,7 +15,7 @@ const (
     unitTypeReceiver = "1"
     headerSize uint32 = 16
     eISCPVersion byte = 0x01
-    crlf = "\r\n"
+    terminator = "\r\n"
 )
 
 // ISCPMessage is the base message for ISCP.
@@ -38,12 +38,16 @@ func NewISCPMessage(command ISCPCommand) *ISCPMessage {
 
 // Format returns this message as a string, including terminating newline.
 func (i *ISCPMessage) Format() string {
-    return iscpStart + unitTypeReceiver + string(i.command) + crlf
+    return iscpStart + unitTypeReceiver + string(i.command) + terminator
 }
 
 // Command returns the ISCP command for this message.
 func (i *ISCPMessage) Command() ISCPCommand {
     return i.command
+}
+
+func (i *ISCPMessage) String() string {
+    return "ISCP " + string(i.Command())
 }
 
 // ToEISCP converts this message to eISCP format.
@@ -68,11 +72,13 @@ func (e *EISCPMessage) Command() ISCPCommand {
     return e.message.Command()
 }
 
+func (e *EISCPMessage) String() string {
+    return "eISCP " + string(e.Command())
+}
+
 // Raw returns the byte data (header and payload) for this message.
 func (e *EISCPMessage) Raw() []byte {
-    msg := e.message.Format()
-    // TODO: encoding is utf-8
-    payload := []byte(msg)
+    payload := []byte(e.message.Format())
 
     end := binary.BigEndian
 
@@ -89,10 +95,10 @@ func (e *EISCPMessage) Raw() []byte {
     // 12       version
     // 13-15    reserved (0x00 0x00 0x00)
     header := make([]byte, headerSize)
-    header[0] = 'I'
-    header[1] = 'S'
-    header[2] = 'C'
-    header[3] = 'P'
+    header[0] = 0x49  // I
+    header[1] = 0x53  // S
+    header[2] = 0x43  // C
+    header[3] = 0x50  // P
     header[4] = headerLen[0]
     header[5] = headerLen[1]
     header[6] = headerLen[2]

@@ -8,6 +8,7 @@ import (
 
 const (
     defaultPort = 60128
+    protocol = "tcp"
 )
 
 type Device struct {
@@ -28,6 +29,7 @@ func NewDevice(host string) Device {
 }
 
 func (d *Device) Start() error {
+    log.Printf("Start %v", d)
     // TODO: if already started return err
     err := d.connect()
     if err != nil {
@@ -38,14 +40,12 @@ func (d *Device) Start() error {
 }
 
 func (d *Device) Stop() {
+    log.Printf("Stop %v", d)
     // if not started, return
 
     close(d.recv)
     close(d.send)
-    err := d.conn.Close()
-    if err != nil {
-        log.Printf("Error closing connection: %v", err)
-    }
+    d.disconnect()
 }
 
 func (d *Device) SendCommand(command ISCPCommand) {
@@ -86,27 +86,42 @@ func (d *Device) doReceive(msg *EISCPMessage) {
 func (d *Device) connect() error {
     addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
     log.Printf("Connect to %v", addr)
-    conn, err := net.Dial("tcp", addr)
+    conn, err := net.Dial(protocol, addr)
     if err != nil {
         return err
     }
+    // TODO: Timeouts
     // TODO: maybe handshake to check we are connected to an onkyo device?
+    log.Println("Connected.")
     d.conn = conn
     go d.read()
     return nil
+}
+
+func (d *Device) disconnect() {
+    if d.conn == nil {
+        // not connected
+        return
+    }
+    err := d.conn.Close()
+    if err != nil {
+        log.Printf("Error closing connection: %v", err)
+    }
 }
 
 func (d *Device) read() {
     data := make([]byte, 0)
     for {
         // read up to N bytes ...
-        buf := make([]byte, 32)
+        buf := make([]byte, 16)
+        log.Printf("reading ...")
         numRead, err := d.conn.Read(buf)
         if err != nil {
             log.Printf("Read error: %v", err)
+            // host closes (EOF) when another client connects?
             return
         }
-
+        log.Printf("Read: %v - %v", numRead, buf)
         // ... combine with what we already have
         data = append(data, buf[:numRead]...)
 
@@ -117,6 +132,7 @@ func (d *Device) read() {
         consumed := 0
         if err != nil {
             // parse error
+            consumed = len(data)
         } else {
             d.recv <- msg
             // TODO: the parser needs to tell us
