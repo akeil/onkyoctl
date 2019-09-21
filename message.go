@@ -157,6 +157,40 @@ func ParseEISCP(data []byte) (*EISCPMessage, error) {
     return iscp.ToEISCP(), nil
 }
 
+// ParseHeader parses the header of an eISCP message
+// and returns the header size and payload size
+func ParseHeader(data []byte) (int, int, error){
+    // we need at least 12 byte
+    // - 4 bytes "magic"
+    // - 4 bytes header length
+    // - 4 bytes payload length
+    if len(data) < 12 {
+        return 0, 0, errors.New("invalid eISCP message (too short)")
+    }
+
+    // check the "magic"
+    iOk := data[0] == 0x49  // I
+    sOk := data[1] == 0x53  // S
+    cOk := data[2] == 0x43  // C
+    pOk := data[3] == 0x50  // P
+    magicOk := iOk && sOk && cOk && pOk
+    if !magicOk {
+        return 0, 0, errors.New("missing magic byte sequence in message header")
+    }
+
+    end := binary.BigEndian
+    headerSize := end.Uint32(data[4:8])
+    payloadSize := end.Uint32(data[8:12])
+    indicatedSize := headerSize + payloadSize
+    if len(data) < int(indicatedSize) {
+        return 0, 0, errors.New("size mismatch, message shorter than indicated")
+    }
+
+    // note we might parse the last 4 bytes to get the version
+
+    return int(headerSize), int(payloadSize), nil
+}
+
 // ParseISCP parses an ISCP message from a byte array.
 func ParseISCP(data []byte) (*ISCPMessage, error) {
     // decode to string first
