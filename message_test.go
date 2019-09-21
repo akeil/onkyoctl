@@ -13,6 +13,75 @@ func TestISCPFormat(t *testing.T) {
     assertEqual(t, s, "!1PWR01\r\n")
 }
 
+func TestISCPParse(t *testing.T) {
+
+    type Case struct {
+        Data []byte
+        ExpectError bool
+        Command ISCPCommand
+    }
+    cases := []Case{
+        // messages too short
+        Case{
+            Data: make([]byte, 2),
+            ExpectError: true,
+        },
+        Case{
+            Data: make([]byte, 9),
+            ExpectError: true,
+        },
+        Case{
+            Data: []byte("1PWR01\n"),
+            ExpectError: true,
+        },
+        Case{
+            Data: []byte("!PWR01\n"),
+            ExpectError: true,
+        },
+        // various end styles
+        Case{
+            Data: []byte("!1PWR01\r\n"),
+            ExpectError: false,
+            Command: "PWR01",
+        },
+        Case{
+            Data: []byte("!1PWR01\r"),
+            ExpectError: false,
+            Command: "PWR01",
+        },
+        Case{
+            Data: []byte("!1PWR01\n"),
+            ExpectError: false,
+            Command: "PWR01",
+        },
+        //invalid end styles
+        Case{
+            Data: []byte("!1PWR01"),
+            ExpectError: true,
+        },
+        /*
+        Case{
+            Data: []byte("!1PWR01\n\n"),
+            ExpectError: true,
+        },
+        Case{
+            Data: []byte("!1PWR01\r\r"),
+            ExpectError: true,
+        },
+        */
+    }
+    for _, testCase := range cases {
+
+        iscp, err := ParseISCP(testCase.Data)
+        if testCase.ExpectError {
+            assertErr(t, err)
+        } else {
+            assertNoErr(t, err)
+            assertEqual(t, iscp.Command(), testCase.Command)
+        }
+    }
+}
+
 
 func TestEISCPRaw(t *testing.T) {
     m := NewEISCPMessage("PWR01")
@@ -37,4 +106,74 @@ func TestEISCPRaw(t *testing.T) {
     // payload
     payload := raw[16:]
     assertEqual(t, payload, []byte("!1PWR01\r\n"))
+}
+
+func TestEISCPParse(t *testing.T) {
+    m := NewEISCPMessage("PWR01")
+    raw := m.Raw()
+    eiscp, err := ParseEISCP(raw)
+    assertNoErr(t, err)
+    assertEqual(t, eiscp.Command(), m.Command())
+
+    _, err = ParseEISCP(make([]byte, 1))
+    assertErr(t, err)
+
+    _, err = ParseEISCP(make([]byte, 100))
+    assertErr(t, err)
+
+    // magic ok, message lengths bad
+    _, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,  // ISCP
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+    })
+    assertErr(t, err)
+
+    // magic ok, header length ok, missing part of header
+    _, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,  // ISCP
+        0x00, 0x00, 0x00, 0x10,  // 16
+        0x00, 0x00, 0x00, 0x00,
+    })
+    assertErr(t, err)
+
+    // magic ok, header length ok, missing payload
+    _, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,  // ISCP
+        0x00, 0x00, 0x00, 0x10,  // 16
+        0x00, 0x00, 0x00, 0x00,
+        0x01, 0x00, 0x00, 0x00,  // version 1, 3x reserved
+    })
+    assertErr(t, err)
+
+    // magic ok, header length ok, missing payload length
+    eiscp, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,        // ISCP
+        0x00, 0x00, 0x00, 0x10,        // 16
+        0x00, 0x00, 0x00, 0x00,        // 0
+        0x01, 0x00, 0x00, 0x00,        // version 1, 3x reserved
+        0x21, 0x31, 0x58, 0x58, 0x0A,  // !1XX\n
+    })
+    assertErr(t, err)
+
+    // magic ok, header length ok, invalid payload length
+    eiscp, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,        // ISCP
+        0x00, 0x00, 0x00, 0x10,        // 16
+        0x00, 0x00, 0x00, 0x0C,        // 12
+        0x01, 0x00, 0x00, 0x00,        // version 1, 3x reserved
+        0x21, 0x31, 0x58, 0x58, 0x0A,  // !1XX\n
+    })
+    assertErr(t, err)
+
+    // magic ok, header length ok, missing payload length
+    eiscp, err = ParseEISCP([]byte{
+        0x49, 0x53, 0x43, 0x50,        // ISCP
+        0x00, 0x00, 0x00, 0x10,        // 16
+        0x00, 0x00, 0x00, 0x05,        // 5
+        0x01, 0x00, 0x00, 0x00,        // version 1, 3x reserved
+        0x21, 0x31, 0x58, 0x58, 0x0A,  // !1XX\n
+    })
+    assertNoErr(t, err)
+    assertEqual(t, eiscp.Command(), ISCPCommand("XX"))
 }
