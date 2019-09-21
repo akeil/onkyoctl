@@ -16,6 +16,7 @@ const (
     headerSize uint32 = 16
     eISCPVersion byte = 0x01
     terminator = "\r\n"
+    endMarker = 0x1A
 )
 
 // ISCPMessage is the base message for ISCP.
@@ -206,6 +207,11 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
         }
     } else {
         return nil, errors.New("missing terminator at message end")
+    }
+
+    // not sure if the endmarker is mandatory
+    if s[offset] == endMarker {
+        offset--
     }
 
     // TODO: message should not contain any more whitespace
