@@ -15,3 +15,17 @@ func assert(t *testing.T, actual, expected interface{}, shouldEqual bool) {
 		t.Fail()
 	}
 }
+
+func assertErr(t *testing.T, err error) {
+	if err == nil {
+		t.Log("Expected error, got none.")
+		t.Fail()
+	}
+}
+
+func assertNoErr(t *testing.T, err error) {
+	if err != nil {
+		t.Logf("Unexpected error: %v.", err)
+		t.Fail()
+	}
+}
