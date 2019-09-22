@@ -126,3 +126,6 @@ Some selected commands may be mapped to events:
 | APD01    | auto-powerdown | on       | auto-standby |            |
 | APDUP    | auto-powerdown | wrap     | auto-standby |            |
 | APDQSTN  | auto-powerdown | query    | auto-standby |            |
+| MOT00    |
+| NDSE--   |
+| UPD00    |

@@ -2,6 +2,7 @@ package onkyoctl
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -19,8 +20,8 @@ type ParamType string
 const (
 	paramOnOff       ParamType = "onOff"
 	paramOnOffToggle ParamType = "onOffToggle"
-	// lookup
-	// lookupToggle
+	paramEnum        ParamType = "enum"
+	paramEnumToggle  ParamType = "enumToggle"
 
 	queryParam = "QSTN"
 )
@@ -39,6 +40,7 @@ type Command struct {
 	Name      string
 	Group     ISCPGroup
 	ParamType ParamType
+	Lookup    map[string]string
 }
 
 // CreateQuery generates the "xxxQSTN" command for this Command.
@@ -62,6 +64,10 @@ func (c *Command) formatParam(raw interface{}) (string, error) {
 		return formatOnOff(raw)
 	case paramOnOffToggle:
 		return formatOnOffToggle(raw)
+	case paramEnum:
+		return formatEnum(c.Lookup, raw)
+	case paramEnumToggle:
+		return formatEnumToggle(c.Lookup, raw)
 	}
 	return "", errors.New("invalid param type")
 }
@@ -73,6 +79,10 @@ func (c *Command) ParseParam(raw string) (string, error) {
 		return parseOnOff(raw)
 	case paramOnOffToggle:
 		return parseOnOffToggle(raw)
+	case paramEnum:
+		return parseEnum(c.Lookup, raw)
+	case paramEnumToggle:
+		return parseEnumToggle(c.Lookup, raw)
 	}
 	return "", errors.New("invalid param type")
 }
@@ -153,6 +163,41 @@ func parseOnOffToggle(raw string) (string, error) {
 		return parsed, err
 	}
 	return parseOnOff(raw)
+}
+
+func formatEnum(lookup map[string]string, raw interface{}) (string, error) {
+	s := fmt.Sprintf("%v", raw)
+	s = strings.ToLower(s)
+	for key, value := range lookup {
+		if value == s {
+			return key, nil
+		}
+	}
+	return "", errors.New("invalid parameter")
+}
+
+func parseEnum(lookup map[string]string, raw string) (string, error) {
+	value, ok := lookup[raw]
+	if ok {
+		return value, nil
+	}
+	return "", errors.New("invalid parameter")
+}
+
+func formatEnumToggle(lookup map[string]string, raw interface{}) (string, error) {
+	parsed, err := formatToggle(raw)
+	if err == nil {
+		return parsed, err
+	}
+	return formatEnum(lookup, raw)
+}
+
+func parseEnumToggle(lookup map[string]string, raw string) (string, error) {
+	value, err := parseToggle(raw)
+	if err == nil {
+		return value, err
+	}
+	return parseEnum(lookup, raw)
 }
 
 func formatToggle(raw interface{}) (string, error) {

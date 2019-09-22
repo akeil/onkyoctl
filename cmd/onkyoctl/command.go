@@ -64,6 +64,9 @@ func doStatus(host string, port int) error {
         "speaker-a",
         "speaker-b",
         "input",
+        "listen-mode",
+        "display",
+        "dimmer",
     }
     for _, name := range(names) {
         device.Query(name)
@@ -101,6 +104,7 @@ func doCommand(host string, port int, name, value string) error {
     }
     defer device.Stop()
 
+    // TODO: wait until command has been send
     return device.SendCommand(name, value)
 }
 

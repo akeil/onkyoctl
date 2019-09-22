@@ -217,6 +217,52 @@ func basicCommands() CommandSet {
 			Group:     "SPB",
 			ParamType: "onOff",
 		},
+		Command{
+			Name:      "dimmer",
+			Group:     "DIM",
+			ParamType: "enum",
+			Lookup: map[string]string{
+				"00": "bright",
+				"01": "dim",
+				"02": "dark",
+				"03": "off",
+				"08": "led-off",
+			},
+		},
+		Command{
+			Name:      "display",
+			Group:     "DIF",
+			ParamType: "enumToggle",
+			Lookup: map[string]string{
+				"00": "mode-1",
+				"01": "mode-2",
+				"02": "mode-3",
+				"03": "mode-4",
+			},
+		},
+		Command{
+			Name:      "input",
+			Group:     "SLI",
+			ParamType: "enum",
+			Lookup: map[string]string{
+				"00": "video-1",
+				"01": "cbl-sat",
+				"02": "game",
+				"03": "aux1",
+				"20": "tape-1",
+			},
+		},
+		Command{
+			Name:      "listen-mode",
+			Group:     "LMD",
+			ParamType: "enum",
+			Lookup: map[string]string{
+				"00":     "stereo",
+				"STEREO": "stereo",
+				"01":     "direct",
+				"11":     "pure",
+			},
+		},
 	}
 	return NewBasicCommandSet(commands)
 }

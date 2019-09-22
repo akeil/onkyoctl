@@ -181,6 +181,98 @@ func TestParseOnOff(t *testing.T) {
 	assertEqual(t, actual, "toggle")
 }
 
+func TestFormatEnum(t *testing.T) {
+	c := Command{
+		Group:     "DIM",
+		ParamType: "enum",
+		Lookup: map[string]string{
+			"00": "bright",
+			"01": "dim",
+			"02": "dark",
+			"03": "off",
+			"08": "led-off",
+		},
+	}
+
+	var err error
+	var actual ISCPCommand
+
+	actual, err = c.CreateCommand("bright")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("DIM00"))
+
+	actual, err = c.CreateCommand("off")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("DIM03"))
+
+	actual, err = c.CreateCommand("Off")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("DIM03"))
+
+	_, err = c.CreateCommand("unknown")
+	assertErr(t, err)
+
+	_, err = c.CreateCommand("")
+	assertErr(t, err)
+
+	_, err = c.CreateCommand(123)
+	assertErr(t, err)
+
+	_, err = c.CreateCommand(true)
+	assertErr(t, err)
+
+	_, err = c.CreateCommand("toggle")
+	assertErr(t, err)
+
+	c.ParamType = "enumToggle"
+	actual, err = c.CreateCommand("toggle")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("DIMTG"))
+}
+
+func TestParseEnum(t *testing.T) {
+	c := Command{
+		Group:     "DIM",
+		ParamType: "enum",
+		Lookup: map[string]string{
+			"00": "bright",
+			"01": "dim",
+			"02": "dark",
+			"03": "off",
+			"08": "led-off",
+		},
+	}
+
+	var err error
+	var actual string
+
+	actual, err = c.ParseParam("03")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "off")
+
+	actual, err = c.ParseParam("08")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "led-off")
+
+	_, err = c.ParseParam("invalid")
+	assertErr(t, err)
+
+	_, err = c.ParseParam("123")
+	assertErr(t, err)
+
+	_, err = c.ParseParam("")
+	assertErr(t, err)
+
+	c.ParamType = "enumToggle"
+	actual, err = c.ParseParam("TG")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "toggle")
+
+	actual, err = c.ParseParam("00")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "bright")
+}
+
 func TestBasicCreate(t *testing.T) {
 	commands := []Command{
 		Command{
