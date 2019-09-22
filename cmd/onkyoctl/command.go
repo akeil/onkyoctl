@@ -12,7 +12,7 @@ import (
 
     "gopkg.in/alecthomas/kingpin.v2"
 
-    "akeil.net/akeil/onkyoctl"
+    onkyo "akeil.net/akeil/onkyoctl"
 )
 
 func main() {
@@ -22,14 +22,15 @@ func main() {
     // PROG <name> <param>
     //
     // with optional args --host and --port
-
     app := kingpin.New("onkyo", "Control Onkyo receiver.")
     app.HelpFlag.Short('h')
 
-    var host = app.Flag("host", "Hostname or IP address").String()
-    var port = app.Flag("port", "Port number").Default("60128").Short('p').Int()
-    var cfgPath = app.Flag("config", "Path to configuration file").Short('c').String()
-    var verbose = app.Flag("verbose", "Verbose output").Short('v').Bool()
+    var (
+        host = app.Flag("host", "Hostname or IP address").String()
+        port = app.Flag("port", "Port number").Default("60128").Short('p').Int()
+        cfgPath = app.Flag("config", "Path to configuration file").Short('c').String()
+        verbose = app.Flag("verbose", "Verbose output").Short('v').Bool()
+    )
 
     do := app.Command("do", "Execute a command").Default()
     var name = do.Arg("name", "The property to change").Required().String()
@@ -38,27 +39,31 @@ func main() {
     status := app.Command("status", "Show device status")
     watch := app.Command("watch", "Watch device status")
 
-    onkyoctl.SetLogLevel(onkyoctl.Error)
+    onkyo.SetLogLevel(onkyo.Error)
 
     var err error
+    var device onkyo.Device
     switch kingpin.MustParse(app.Parse(os.Args[1:])) {
     case do.FullCommand():
         if *verbose {
-            onkyoctl.SetLogLevel(onkyoctl.Debug)
+            onkyo.SetLogLevel(onkyo.Debug)
         }
-        err = doCommand(*cfgPath, *host, *port, *name, *value)
+        device = setup(*cfgPath, *host, *port)
+        err = doCommand(device, *name, *value)
 
     case status.FullCommand():
         if *verbose {
-            onkyoctl.SetLogLevel(onkyoctl.Debug)
+            onkyo.SetLogLevel(onkyo.Debug)
         }
-        err = doStatus(*cfgPath, *host, *port)
+        device = setup(*cfgPath, *host, *port)
+        err = doStatus(device)
 
     case watch.FullCommand():
         if *verbose {
-            onkyoctl.SetLogLevel(onkyoctl.Debug)
+            onkyo.SetLogLevel(onkyo.Debug)
         }
-        err = doWatch(*cfgPath, *host, *port)
+        device = setup(*cfgPath, *host, *port)
+        err = doWatch(device)
     }
 
     if err != nil {
@@ -66,16 +71,14 @@ func main() {
     }
 }
 
-func doStatus(cfgPath, host string, port int) error {
-    device := setup(cfgPath, host, port)
-
+func doStatus(device onkyo.Device) error {
     err := device.Start()
     if err != nil {
         return err
     }
     defer device.Stop()
 
-    fmt.Printf("Device Status:\n")
+    fmt.Printf("Status [%v]:\n", device.Host)
 
     // TODO: use command lines args and use this list as default/fallback
     names := []string{
@@ -131,9 +134,7 @@ func contains(haystack []string, needle string) bool {
     return false
 }
 
-func doWatch(cfgPath, host string, port int) error {
-    device := setup(cfgPath, host, port)
-
+func doWatch(device onkyo.Device) error {
     err := device.Start()
     if err != nil {
         return err
@@ -147,9 +148,7 @@ func doWatch(cfgPath, host string, port int) error {
     return nil
 }
 
-func doCommand(cfgPath, host string, port int, name, value string) error {
-    device := setup(cfgPath, host, port)
-
+func doCommand(device onkyo.Device, name, value string) error {
     err := device.Start()
     if err != nil {
         return err
@@ -165,9 +164,9 @@ func doCommand(cfgPath, host string, port int, name, value string) error {
     return nil
 }
 
-func setup(cfgPath, host string, port int) onkyoctl.Device {
+func setup(cfgPath, host string, port int) onkyo.Device {
     var err error
-    cfg := onkyoctl.DefaultConfig()
+    cfg := onkyo.DefaultConfig()
 
     // explicit param or default
     if cfgPath == "" {
@@ -177,10 +176,10 @@ func setup(cfgPath, host string, port int) onkyoctl.Device {
         }
     }
     if cfgPath != "" {
-        cfg, err = onkyoctl.ReadConfig(cfgPath)
+        cfg, err = onkyo.ReadConfig(cfgPath)
         if err != nil {
             log.Printf("Error reading config from %q: %v", cfgPath, err)
-            cfg = onkyoctl.DefaultConfig()
+            cfg = onkyo.DefaultConfig()
         }
     }
 
@@ -192,7 +191,7 @@ func setup(cfgPath, host string, port int) onkyoctl.Device {
         cfg.Port = port
     }
 
-    device := onkyoctl.NewDevice(cfg)
+    device := onkyo.NewDevice(cfg)
     device.OnMessage(func(name, value string) {
         fmt.Printf("%v = %v\n", name, value)
     })
