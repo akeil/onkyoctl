@@ -16,6 +16,7 @@ const (
 type Device struct {
 	Host string
 	Port int
+	commands CommandSet
     timeout int
 	conn net.Conn
 	send chan ISCPCommand
@@ -27,6 +28,8 @@ func NewDevice(host string) Device {
 	return Device{
 		Host: host,
 		Port: defaultPort,
+		commands: basicCommands(),
+		timeout: 10,
 		send: make(chan ISCPCommand, 16),
 		recv: make(chan ISCPCommand, 16),
 	}
@@ -54,8 +57,19 @@ func (d *Device) Stop() {
 	d.disconnect()
 }
 
-// SendCommand sends an ISCP command to the device.
-func (d *Device) SendCommand(command ISCPCommand) {
+// SendCommand sends an "friendly" command (e.g. "power off") to the device.
+func (d *Device) SendCommand(name string, param interface{}) error {
+	log.Printf("Send command %v: %v", name, param)
+	command, err := d.commands.CreateCommand(name, param)
+	if err != nil {
+		return err
+	}
+	d.send <- command
+	return nil
+}
+
+// SendISCP sends a raw ISCP command to the device.
+func (d *Device) SendISCP(command ISCPCommand) {
 	d.send <- command
 }
 
@@ -151,4 +165,30 @@ func (d *Device) read() {
 		d.recv <- iscp.Command()
 
 	}
+}
+
+func basicCommands() CommandSet {
+	commands := []Command{
+        Command{
+            Name: "power",
+            Group: "PWR",
+            ParamType: "onOff",
+        },
+        Command{
+            Name: "mute",
+            Group: "AMT",
+            ParamType: "onOffToggle",
+        },
+		Command{
+            Name: "speaker-a",
+            Group: "SPA",
+            ParamType: "onOff",
+        },
+		Command{
+            Name: "speaker-b",
+            Group: "SPA",
+            ParamType: "onOff",
+        },
+    }
+    return NewBasicCommandSet(commands)
 }

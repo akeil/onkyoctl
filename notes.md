@@ -122,7 +122,7 @@ Some selected commands may be mapped to events:
 | LMDxx    | listen-mode   | (more)   |           |            |
 | LMD11    | listen-mode   | pure     |           |            |
 | LMDQSTN  | listen-mode   | query    |           |            |
-| APD00    | auto-poweroff | off      |           |            |
-| APD01    | auto-poweroff | on       |           |            |
-| APDUP    | auto-poweroff | wrap     |           |            |
-| APDQSTN  | auto-poweroff | query    |           |            |
+| APD00    | auto-powerdown | off      | auto-standby |            |
+| APD01    | auto-powerdown | on       | auto-standby |            |
+| APDUP    | auto-powerdown | wrap     | auto-standby |            |
+| APDQSTN  | auto-powerdown | query    | auto-standby |            |

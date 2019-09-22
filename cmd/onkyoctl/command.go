@@ -24,7 +24,7 @@ func runOnce(dev onkyoctl.Device) {
     defer dev.Stop()
 
     // send command
-    dev.SendCommand(onkyoctl.ISCPCommand("MVLQSTN"))
+    dev.SendISCP(onkyoctl.ISCPCommand("MVLQSTN"))
 
     // wait for the reply or time out
 }
@@ -36,10 +36,17 @@ func runForever(dev onkyoctl.Device) {
     }
     defer dev.Stop()
 
-    dev.SendCommand(onkyoctl.ISCPCommand("MVLUP"))
-    dev.SendCommand(onkyoctl.ISCPCommand("PWRQSTN"))
-    dev.SendCommand(onkyoctl.ISCPCommand("MVLQSTN"))
-    //dev.SendCommand(onkyoctl.ISCPCommand("PWR00"))
+    dev.SendISCP(onkyoctl.ISCPCommand("PWRQSTN"))
+    dev.SendISCP(onkyoctl.ISCPCommand("MVLQSTN"))
+    err = dev.SendCommand("volume", "up")
+    if err != nil {
+        log.Printf("Error sending command: %v", err)
+    }
+
+    err = dev.SendCommand("mute", "off")
+    if err != nil {
+        log.Printf("Error sending command: %v", err)
+    }
 
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
