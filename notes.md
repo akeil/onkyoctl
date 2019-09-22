@@ -121,11 +121,31 @@ Some selected commands may be mapped to events:
 | LMD01    | listen-mode   | direct   |           |            |
 | LMDxx    | listen-mode   | (more)   |           |            |
 | LMD11    | listen-mode   | pure     |           |            |
-| LMDQSTN  | listen-mode   | query    |           |            |
-| APD00    | auto-powerdown | off      | auto-standby |            |
-| APD01    | auto-powerdown | on       | auto-standby |            |
-| APDUP    | auto-powerdown | wrap     | auto-standby |            |
-| APDQSTN  | auto-powerdown | query    | auto-standby |            |
-| MOT00    |
-| NDSE--   |
-| UPD00    |
+| LMDQSTN  | listen-mode     | query                   |                |            |
+| APD00    | auto-powerdown  | off                     | auto-standby   |            |
+| APD01    | auto-powerdown  | on                      | auto-standby   |            |
+| APDUP    | auto-powerdown  | wrap                    | auto-standby   |            |
+| APDQSTN  | auto-powerdown  | query                   | auto-standby   |            |
+| MOT00    | music-optimizer | off                     | optimizer      |            |
+| MOT01    | music-optimizer | on                      | optimizer      |            |
+| MOTUP    | music-optimizer | wrap                    | optimizer      |            |
+| MOTQSTN  | music-optimizer | query                   | optimizer      |            |
+| UPD00    | update          | no-new-firmware         | update         |            |
+| UPD01    | update          | new-firmware            | update         |            |
+| UPDNET   | update          | start-net               |                | startNetUpdate |
+| UPDUSB   | update          | start-usb               |                | startUSBUpdate |
+| UPDCMP   | update          | update-complete         | update         |           |
+| UPDQSTN  | update          | query                   | update         |           |
+| NDS---   | net-usb-status  | none                    | net-usb-status |           |
+| NDSE--   | net-usb-status  | ethernet                | net-usb-status |           |
+| NDSW--   | net-usb-status  | wifi                    | net-usb-status |           |
+| NDS-i-   | net-usb-status  | front-iPhone            | net-usb-status |           |
+| NDS-M-   | net-usb-status  | front-memory            | net-usb-status |           |
+| NDS-W-   | net-usb-status  | front-wifi-adaptor      | net-usb-status |           |
+| NDS-B-   | net-usb-status  | front-bluetooth-adaptor | net-usb-status |           |
+| NDS-x-   | net-usb-status  | front-disabled          | net-usb-status |           |
+| NDS--i   | net-usb-status  | rear-iPhone             | net-usb-status |           |
+| NDS--M   | net-usb-status  | rear-memory             | net-usb-status |           |
+| NDS--W   | net-usb-status  | rear-wifi-adaptor       | net-usb-status |           |
+| NDS--B   | net-usb-status  | rear-bluetooth-adaptor  | net-usb-status |           |
+| NDS--x   | net-usb-status  | rear-disabled           | net-usb-status |           |

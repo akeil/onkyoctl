@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,7 @@ type Device struct {
 	conn     net.Conn
 	send     chan ISCPCommand
 	recv     chan ISCPCommand
+	wait	 *sync.WaitGroup
 }
 
 // NewDevice sets up a new Onkyo device.
@@ -34,6 +36,7 @@ func NewDevice(host string) Device {
 		Port:     defaultPort,
 		commands: basicCommands(),
 		timeout:  10,
+		wait:     &sync.WaitGroup{},
 		send:     make(chan ISCPCommand, 16),
 		recv:     make(chan ISCPCommand, 16),
 	}
@@ -74,7 +77,7 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.send <- command
+	d.SendISCP(command)
 	return nil
 }
 
@@ -90,7 +93,24 @@ func (d *Device) Query(name string) error {
 
 // SendISCP sends a raw ISCP command to the device.
 func (d *Device) SendISCP(command ISCPCommand) {
+	d.wait.Add(1)
 	d.send <- command
+}
+
+// WaitSend waits for all submitted messages to be sent.
+func (d *Device) WaitSend(timeout time.Duration) {
+	done := make(chan int)
+	go func() {
+		defer close(done)
+		d.wait.Wait()
+	}()
+
+	select {
+	case <-done:
+		return
+	case <-time.After(timeout):
+		return
+	}
 }
 
 func (d *Device) loop() {
@@ -109,6 +129,8 @@ func (d *Device) loop() {
 }
 
 func (d *Device) doSend(command ISCPCommand) {
+	defer d.wait.Done()
+
 	msg := NewEISCPMessage(command)
 	log.Printf("Send message: %v", msg)
 	numWritten, err := d.conn.Write(msg.Raw())
@@ -261,6 +283,15 @@ func basicCommands() CommandSet {
 				"STEREO": "stereo",
 				"01":     "direct",
 				"11":     "pure",
+			},
+		},
+		Command{
+			Name:      "update",
+			Group:     "UPD",
+			ParamType: "enum",
+			Lookup: map[string]string{
+				"00": "no-new-firmware",
+				"01": "new-firmware",
 			},
 		},
 	}

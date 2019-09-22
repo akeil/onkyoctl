@@ -5,6 +5,7 @@ import (
     "fmt"
     "os"
 	"os/signal"
+    "time"
 
     "gopkg.in/alecthomas/kingpin.v2"
 
@@ -104,8 +105,13 @@ func doCommand(host string, port int, name, value string) error {
     }
     defer device.Stop()
 
-    // TODO: wait until command has been send
-    return device.SendCommand(name, value)
+    err = device.SendCommand(name, value)
+    if err != nil {
+        return err
+    }
+
+    device.WaitSend(1 * time.Second)
+    return nil
 }
 
 func setup(host string, port int) onkyoctl.Device {
