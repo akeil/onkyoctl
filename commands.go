@@ -3,6 +3,7 @@ package onkyoctl
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -18,10 +19,12 @@ type ISCPCommand string
 type ParamType string
 
 const (
-	paramOnOff       ParamType = "onOff"
-	paramOnOffToggle ParamType = "onOffToggle"
-	paramEnum        ParamType = "enum"
-	paramEnumToggle  ParamType = "enumToggle"
+	paramOnOff        ParamType = "onOff"
+	paramOnOffToggle  ParamType = "onOffToggle"
+	paramEnum         ParamType = "enum"
+	paramEnumToggle   ParamType = "enumToggle"
+	paramIntRange     ParamType = "intRange"
+	paramIntRangeEnum ParamType = "intRangeEnum"
 
 	queryParam = "QSTN"
 )
@@ -41,6 +44,9 @@ type Command struct {
 	Group     ISCPGroup
 	ParamType ParamType
 	Lookup    map[string]string
+	Lower     int
+	Upper     int
+	Scale     int
 }
 
 // CreateQuery generates the "xxxQSTN" command for this Command.
@@ -68,6 +74,10 @@ func (c *Command) formatParam(raw interface{}) (string, error) {
 		return formatEnum(c.Lookup, raw)
 	case paramEnumToggle:
 		return formatEnumToggle(c.Lookup, raw)
+	case paramIntRange:
+		return formatIntRange(c.Lower, c.Upper, c.Scale, raw)
+	case paramIntRangeEnum:
+		return formatIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
 	return "", errors.New("invalid param type")
 }
@@ -83,6 +93,10 @@ func (c *Command) ParseParam(raw string) (string, error) {
 		return parseEnum(c.Lookup, raw)
 	case paramEnumToggle:
 		return parseEnumToggle(c.Lookup, raw)
+	case paramIntRange:
+		return parseIntRange(c.Lower, c.Upper, c.Scale, raw)
+	case paramIntRangeEnum:
+		return parseIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
 	return "", errors.New("invalid param type")
 }
@@ -196,6 +210,104 @@ func parseEnumToggle(lookup map[string]string, raw string) (string, error) {
 	value, err := parseToggle(raw)
 	if err == nil {
 		return value, err
+	}
+	return parseEnum(lookup, raw)
+}
+
+func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
+	// conversion
+	var numeric float64
+	switch val := raw.(type) {
+	case int:
+		numeric = float64(val)
+	case int8:
+		numeric = float64(val)
+	case int16:
+		numeric = float64(val)
+	case int32:
+		numeric = float64(val)
+	case int64:
+		numeric = float64(val)
+	case uint:
+		numeric = float64(val)
+	case uint8:
+		numeric = float64(val)
+	case uint16:
+		numeric = float64(val)
+	case uint32:
+		numeric = float64(val)
+	case uint64:
+		numeric = float64(val)
+	case float32:
+		numeric = float64(val)
+	case float64:
+		numeric = val
+
+	case string:
+		var convErr error
+		numeric, convErr = strconv.ParseFloat(val, 64)
+		if convErr != nil {
+			return "", convErr
+		}
+	default:
+		return "", errors.New("invalid parameter")
+	}
+
+	// bounds check
+	if numeric < float64(lower) || numeric > float64(upper) {
+		return "", errors.New("invalid parameter")
+	}
+
+	if scale == 0 {
+		scale = 1
+	}
+	scaled := numeric * float64(scale)
+	rounded := math.Round(scaled)
+	// rounding should not change the value
+	if rounded != scaled {
+		return "", errors.New("invalid parameter")
+	}
+
+	hex := fmt.Sprintf("%X", int(rounded))
+	if len(hex)%2 != 0 {
+		hex = "0" + hex // 'A' to '0A'
+	}
+
+	return hex, nil
+}
+
+func parseIntRange(lower, upper, scale int, raw string) (string, error) {
+	// expect a hex-representation of an integer value
+	numeric, err := strconv.ParseInt(raw, 16, 64)
+	if err != nil {
+		return "", err
+	}
+
+	if scale == 0 {
+		scale = 1
+	}
+	downscaled := float64(numeric) / float64(scale)
+
+	// bounds check
+	if downscaled < float64(lower) || downscaled > float64(upper) {
+		return "", errors.New("invalid parameter")
+	}
+
+	return fmt.Sprintf("%v", downscaled), nil
+}
+
+func formatIntRangeEnum(lower, upper, scale int, lookup map[string]string, raw interface{}) (string, error) {
+	result, err := formatIntRange(lower, upper, scale, raw)
+	if err == nil {
+		return result, err
+	}
+	return formatEnum(lookup, raw)
+}
+
+func parseIntRangeEnum(lower, upper, scale int, lookup map[string]string, raw string) (string, error) {
+	result, err := parseIntRange(lower, upper, scale, raw)
+	if err == nil {
+		return result, err
 	}
 	return parseEnum(lookup, raw)
 }

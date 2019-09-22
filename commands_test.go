@@ -273,6 +273,120 @@ func TestParseEnum(t *testing.T) {
 	assertEqual(t, actual, "bright")
 }
 
+func TestFormatIntRange(t *testing.T) {
+	c := Command{
+		Group:     "MVL",
+		ParamType: "intRangeEnum",
+		Lower:     0,
+		Upper:     100,
+		Scale:     2,
+		Lookup: map[string]string{
+			"UP":   "up",
+			"DOWN": "down",
+		},
+	}
+
+	var err error
+	var actual ISCPCommand
+
+	actual, err = c.CreateCommand(23) // x2 = 46 / 0x2e
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL2E"))
+
+	actual, err = c.CreateCommand(23.0) // x2 = 46 / 0x2e
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL2E"))
+
+	actual, err = c.CreateCommand(2.5) // x2 = 5 / 0x5
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL05"))
+
+	actual, err = c.CreateCommand(0)
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL00"))
+
+	// parse from string
+	actual, err = c.CreateCommand("23.0")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL2E"))
+
+	actual, err = c.CreateCommand("2.5")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL05"))
+
+	// enum entries
+	actual, err = c.CreateCommand("up")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVLUP"))
+
+	// out of range
+	_, err = c.CreateCommand(105)
+	assertErr(t, err)
+
+	_, err = c.CreateCommand(100.1)
+	assertErr(t, err)
+
+	_, err = c.CreateCommand(-1)
+	assertErr(t, err)
+
+	// rounding-error-guard
+	_, err = c.CreateCommand(11.3)
+	assertErr(t, err)
+
+	// type
+	_, err = c.CreateCommand(true)
+	assertErr(t, err)
+	_, err = c.CreateCommand("abc")
+	assertErr(t, err)
+	_, err = c.CreateCommand("")
+	assertErr(t, err)
+}
+
+func TestParseIntRange(t *testing.T) {
+	c := Command{
+		Group:     "MVL",
+		ParamType: "intRangeEnum",
+		Lower:     0,
+		Upper:     100,
+		Scale:     2,
+		Lookup: map[string]string{
+			"UP":   "up",
+			"DOWN": "down",
+		},
+	}
+
+	var err error
+	var actual string
+
+	actual, err = c.ParseParam("00")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "0")
+
+	actual, err = c.ParseParam("05")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "2.5")
+
+	actual, err = c.ParseParam("2E")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "23")
+
+	// enum
+	actual, err = c.ParseParam("DOWN")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "down")
+
+	// not a number
+	_, err = c.ParseParam("XX")
+	assertErr(t, err)
+
+	_, err = c.ParseParam("")
+	assertErr(t, err)
+
+	// out of range
+	_, err = c.ParseParam("FF")
+	assertErr(t, err)
+}
+
 func TestBasicCreate(t *testing.T) {
 	commands := []Command{
 		Command{

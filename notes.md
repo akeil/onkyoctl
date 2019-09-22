@@ -149,3 +149,17 @@ Some selected commands may be mapped to events:
 | NDS--W   | net-usb-status  | rear-wifi-adaptor       | net-usb-status |           |
 | NDS--B   | net-usb-status  | rear-bluetooth-adaptor  | net-usb-status |           |
 | NDS--x   | net-usb-status  | rear-disabled           | net-usb-status |           |
+
+
+### Volume (MVL)
+Assume always(?) 8-bit integer
+that is `0x00` through `0xFF` (0-255).
+
+The allowed range is 0..200 (guess)
+the "actual" value on the display has 0.5 steps and is 0..100 - so divide by 2.
+
+It seems that we need to send the hex-string for this.
+
+E.g. for `26`
+we send `1A` (string)
+effectively `0x31 0x41` (bytes).

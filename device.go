@@ -19,15 +19,15 @@ type Callback func(name, value string)
 
 // Device is an Onkyo device
 type Device struct {
-	Host     string
-	Port     int
-	commands CommandSet
-	callback Callback
-	timeout  int
-	conn     net.Conn
-	send     chan ISCPCommand
-	recv     chan ISCPCommand
-	wait     *sync.WaitGroup
+	Host      string
+	Port      int
+	commands  CommandSet
+	callback  Callback
+	timeout   int
+	conn      net.Conn
+	send      chan ISCPCommand
+	recv      chan ISCPCommand
+	wait      *sync.WaitGroup
 	isRunning bool
 }
 
@@ -255,6 +255,18 @@ func basicCommands() CommandSet {
 			Name:      "power",
 			Group:     "PWR",
 			ParamType: "onOff",
+		},
+		Command{
+			Name:      "volume",
+			Group:     "MVL",
+			ParamType: "intRangeEnum",
+			Lower:     0,
+			Upper:     100,
+			Scale:     2,
+			Lookup: map[string]string{
+				"UP":   "up",
+				"DOWN": "down",
+			},
 		},
 		Command{
 			Name:      "mute",
