@@ -39,12 +39,16 @@ func main() {
     var names = status.Arg("names", "Status items to query, empty for default").Strings()
 
     watch := app.Command("watch", "Watch device status")
+    version := app.Command("version", "Print version")
 
     onkyo.SetLogLevel(onkyo.Error)
 
     var err error
     var device onkyo.Device
     switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+    case version.FullCommand():
+        fmt.Println(onkyo.Version)
+
     case do.FullCommand():
         if *verbose {
             onkyo.SetLogLevel(onkyo.Debug)
