@@ -2,7 +2,6 @@ package onkyoctl
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -145,7 +144,7 @@ func (d *Device) doSend(command ISCPCommand) {
 }
 
 func (d *Device) doReceive(command ISCPCommand) {
-	log.Printf("Recv message: %v", command)
+	logDebug("Receive message: %v", command)
 	name, value, err := d.commands.ReadCommand(command)
 	if err != nil {
 		logWarning("Error reading %q: %v", command, err)
@@ -194,7 +193,7 @@ func (d *Device) read() {
 			// host closes (EOF) when another client connects?
 			return
 		}
-		log.Printf("Read header (%v): %v", numRead, buf)
+		logDebug("Read header (%v): %v", numRead, buf)
 		_, payloadSize, err := ParseHeader(buf)
 		if err != nil {
 			logWarning("Discard bad message: %v", err)

@@ -3,7 +3,6 @@ package onkyoctl
 import (
 	"encoding/binary"
 	"errors"
-	"log"
 )
 
 const (
@@ -111,7 +110,7 @@ func (e *EISCPMessage) Raw() []byte {
 	header[15] = 0x00
 
 	result := append(header, payload...)
-	log.Printf("Raw eISCP message: %v", result)
+	logDebug("Raw eISCP message: %v", result)
 	return result
 }
 
@@ -174,7 +173,7 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	s := string(data)
 	size := len(s)
 
-	log.Printf("Parse message %v / %q", data, s)
+	logDebug("Parse ISCP: %v / %q", data, s)
 
 	// expect: !1<COMMAND>\r\n
 	if size < 4 {
@@ -209,9 +208,7 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 		offset--
 	}
 
-	// TODO: message should not contain any more whitespace
-
 	command := string(s[2 : offset+1])
-	log.Printf("Parsed command %q", command)
+	logDebug("Parsed ISCP command %q", command)
 	return NewISCPMessage(ISCPCommand(command)), nil
 }
