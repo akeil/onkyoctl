@@ -33,8 +33,7 @@ func main() {
     )
 
     do := app.Command("do", "Execute a command").Default()
-    var name = do.Arg("name", "The property to change").Required().String()
-    var value = do.Arg("value", "The value to set").String()
+    var commands = do.Arg("commands", "Commands to send, pairs of <name> <value> - e.g. 'power on volume up'").Required().Strings()
 
     status := app.Command("status", "Show device status")
     watch := app.Command("watch", "Watch device status")
@@ -49,7 +48,7 @@ func main() {
             onkyo.SetLogLevel(onkyo.Debug)
         }
         device = setup(*cfgPath, *host, *port)
-        err = doCommand(device, *name, *value)
+        err = doCommands(device, *commands)
 
     case status.FullCommand():
         if *verbose {
@@ -148,16 +147,24 @@ func doWatch(device onkyo.Device) error {
     return nil
 }
 
-func doCommand(device onkyo.Device, name, value string) error {
+func doCommands(device onkyo.Device, pairs []string) error {
+    if len(pairs) % 2 != 0 {
+        return errors.New("number of arguments must be even")
+    }
+
     err := device.Start()
     if err != nil {
         return err
     }
     defer device.Stop()
 
-    err = device.SendCommand(name, value)
-    if err != nil {
-        return err
+    for i := 0; i < len(pairs); i+=2 {
+        name := pairs[i]
+        value := pairs[i+1]
+        err = device.SendCommand(name, value)
+        if err != nil {
+            return err
+        }
     }
 
     device.WaitSend(1 * time.Second)
