@@ -28,27 +28,27 @@ const (
     query = "QSTN"
 )
 
-type Friendly struct {
+type Command struct {
     Name string
     Title string
     Group ISCPGroup
     ParamType ParamType
 }
 
-func (f *Friendly) QueryCommand() ISCPCommand {
-    return ISCPCommand(string(f.Group) + query)
+func (c *Command) QueryCommand() ISCPCommand {
+    return ISCPCommand(string(c.Group) + query)
 }
 
-func (f *Friendly) CreateCommand(param interface{}) (ISCPCommand, error) {
-    p, err := f.formatParam(param)
+func (c *Command) CreateCommand(param interface{}) (ISCPCommand, error) {
+    p, err := c.formatParam(param)
     if err != nil {
         return "", err
     }
-    return ISCPCommand(string(f.Group) + p), nil
+    return ISCPCommand(string(c.Group) + p), nil
 }
 
-func (f *Friendly) formatParam(raw interface{}) (string, error) {
-    switch f.ParamType {
+func (c *Command) formatParam(raw interface{}) (string, error) {
+    switch c.ParamType {
     case paramOnOff:
         return formatOnOff(raw)
     case paramOnOffToggle:

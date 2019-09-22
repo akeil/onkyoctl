@@ -14,16 +14,16 @@ func TestISCPSplit(t *testing.T) {
 }
 
 func TestFriendlyGenerateQuery(t *testing.T) {
-    f := &Friendly{
+    c := &Command{
         Group: "PWR",
     }
 
-    query := f.QueryCommand()
+    query := c.QueryCommand()
     assertEqual(t, query, ISCPCommand("PWRQSTN"))
 }
 
 func TestFormatOnOff(t *testing.T) {
-    f := &Friendly{
+    c := &Command{
         Group: "PWR",
         ParamType: "onOff",
     }
@@ -106,7 +106,7 @@ func TestFormatOnOff(t *testing.T) {
         },
     }
     for _, tc := range(cases) {
-        actual, err := f.CreateCommand(tc.Param)
+        actual, err := c.CreateCommand(tc.Param)
         if tc.ExpectError {
             assertErr(t, err)
         } else {
@@ -117,27 +117,27 @@ func TestFormatOnOff(t *testing.T) {
     var err error
     var actual ISCPCommand
     // toggle not allowed
-    _, err = f.CreateCommand("toggle")
+    _, err = c.CreateCommand("toggle")
     assertErr(t, err)
-    _, err = f.CreateCommand("")
+    _, err = c.CreateCommand("")
     assertErr(t, err)
 
     // including toggle
-    f.ParamType = "onOffToggle"
+    c.ParamType = "onOffToggle"
     toggle := ISCPCommand("PWRTG")
-    actual, err = f.CreateCommand("toggle")
+    actual, err = c.CreateCommand("toggle")
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
-    actual, err = f.CreateCommand("TOGGLE")
+    actual, err = c.CreateCommand("TOGGLE")
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
-    actual, err = f.CreateCommand("tg")
+    actual, err = c.CreateCommand("tg")
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
-    actual, err = f.CreateCommand("TG")
+    actual, err = c.CreateCommand("TG")
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
-    actual, err = f.CreateCommand("")
+    actual, err = c.CreateCommand("")
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
 }
