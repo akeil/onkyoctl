@@ -123,7 +123,7 @@ func ParseEISCP(data []byte) (*EISCPMessage, error) {
 
 	totalSize := headerSize + payloadSize
 	if len(data) < totalSize {
-		return nil, errors.New("size mismatch message too short")
+		return nil, errors.New("eISCP message too short")
 	}
 
 	payload := data[headerSize:totalSize]
@@ -142,7 +142,7 @@ func ParseHeader(data []byte) (int, int, error) {
 	// - 4 bytes header length
 	// - 4 bytes payload length
 	if len(data) < 12 {
-		return 0, 0, errors.New("invalid eISCP message (too short)")
+		return 0, 0, errors.New("eISCP header too short")
 	}
 
 	// check the "magic"
@@ -152,14 +152,14 @@ func ParseHeader(data []byte) (int, int, error) {
 	pOk := data[3] == 0x50 // P
 	magicOk := iOk && sOk && cOk && pOk
 	if !magicOk {
-		return 0, 0, errors.New("missing magic byte sequence in message header")
+		return 0, 0, errors.New("missing start sequence in message header")
 	}
 
 	end := binary.BigEndian
 	headerSize := end.Uint32(data[4:8])
 	payloadSize := end.Uint32(data[8:12])
 	if len(data) < int(headerSize) {
-		return 0, 0, errors.New("size mismatch, message shorter than indicated header size")
+		return 0, 0, errors.New("eISCP header shorter than indicated")
 	}
 
 	// note we might parse the last 4 bytes to get the version
@@ -176,8 +176,10 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	logDebug("Parse ISCP: %v / %q", data, s)
 
 	// expect: !1<COMMAND>\r\n
-	if size < 4 {
-		return nil, errors.New("invalid length for ISCP message (too short)")
+	// where Command is at least three digits
+	// we can do without CR/LF at the end
+	if size < 5 {
+		return nil, errors.New("ISCP message too short")
 	}
 	if s[0] != byte('!') {
 		return nil, errors.New("missing start character '!'")

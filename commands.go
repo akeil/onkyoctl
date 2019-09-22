@@ -1,7 +1,6 @@
 package onkyoctl
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -79,7 +78,8 @@ func (c *Command) formatParam(raw interface{}) (string, error) {
 	case paramIntRangeEnum:
 		return formatIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
-	return "", errors.New("invalid param type")
+
+	return "", fmt.Errorf("unsupported param type %q", c.ParamType)
 }
 
 // ParseParam converts the ISCP param value to the friendly version.
@@ -98,7 +98,7 @@ func (c *Command) ParseParam(raw string) (string, error) {
 	case paramIntRangeEnum:
 		return parseIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
-	return "", errors.New("invalid param type")
+	return "", fmt.Errorf("unsupported param type %q", c.ParamType)
 }
 
 func formatOnOff(raw interface{}) (string, error) {
@@ -147,7 +147,7 @@ func formatOnOff(raw interface{}) (string, error) {
 	}
 
 	if result == "" {
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 	return result, nil
 }
@@ -159,7 +159,7 @@ func parseOnOff(raw string) (string, error) {
 	case "01":
 		return "on", nil
 	default:
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 }
 
@@ -187,7 +187,7 @@ func formatEnum(lookup map[string]string, raw interface{}) (string, error) {
 			return key, nil
 		}
 	}
-	return "", errors.New("invalid parameter")
+	return "", fmt.Errorf("invalid parameter %v", raw)
 }
 
 func parseEnum(lookup map[string]string, raw string) (string, error) {
@@ -195,7 +195,7 @@ func parseEnum(lookup map[string]string, raw string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return "", errors.New("invalid parameter")
+	return "", fmt.Errorf("invalid parameter %v", raw)
 }
 
 func formatEnumToggle(lookup map[string]string, raw interface{}) (string, error) {
@@ -250,12 +250,12 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 			return "", convErr
 		}
 	default:
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 
 	// bounds check
 	if numeric < float64(lower) || numeric > float64(upper) {
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 
 	if scale == 0 {
@@ -265,7 +265,7 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 	rounded := math.Round(scaled)
 	// rounding should not change the value
 	if rounded != scaled {
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 
 	hex := fmt.Sprintf("%X", int(rounded))
@@ -290,7 +290,7 @@ func parseIntRange(lower, upper, scale int, raw string) (string, error) {
 
 	// bounds check
 	if downscaled < float64(lower) || downscaled > float64(upper) {
-		return "", errors.New("invalid parameter")
+		return "", fmt.Errorf("invalid parameter %v", raw)
 	}
 
 	return fmt.Sprintf("%v", downscaled), nil
@@ -320,14 +320,14 @@ func formatToggle(raw interface{}) (string, error) {
 			return "TG", nil
 		}
 	}
-	return "", errors.New("invalid parameter")
+	return "", fmt.Errorf("invalid parameter %v", raw)
 }
 
 func parseToggle(raw string) (string, error) {
 	if raw == "TG" {
 		return "toggle", nil
 	}
-	return "", errors.New("invalid parameter")
+	return "", fmt.Errorf("invalid parameter %v", raw)
 }
 
 // A CommandSet represnts a set of known/supported commands
@@ -373,7 +373,7 @@ func (b *basicCommandSet) ReadCommand(command ISCPCommand) (string, string, erro
 	group, param := SplitISCP(command)
 	c, ok := b.byGroup[group]
 	if !ok {
-		return "", "", errors.New("unknown ISCP command")
+		return "", "", fmt.Errorf("unknown ISCP command %q", command)
 	}
 
 	value, err := c.ParseParam(param)
@@ -386,7 +386,7 @@ func (b *basicCommandSet) ReadCommand(command ISCPCommand) (string, string, erro
 func (b *basicCommandSet) ForName(name string) (Command, error) {
 	c, ok := b.byName[name]
 	if !ok {
-		return Command{}, errors.New("unknown command")
+		return Command{}, fmt.Errorf("unknown command %q", name)
 	}
 	return c, nil
 }
