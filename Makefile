@@ -12,3 +12,4 @@ test:
 
 deps:
 	go get gopkg.in/alecthomas/kingpin.v2
+	go get github.com/go-ini/ini

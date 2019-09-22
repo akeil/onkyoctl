@@ -9,10 +9,7 @@ import (
 	"time"
 )
 
-const (
-	defaultPort = 60128
-	protocol    = "tcp"
-)
+const protocol = "tcp"
 
 // Callback is the type for message callback functions.
 type Callback func(name, value string)
@@ -32,12 +29,12 @@ type Device struct {
 }
 
 // NewDevice sets up a new Onkyo device.
-func NewDevice(host string) Device {
+func NewDevice(cfg *Config) Device {
 	return Device{
-		Host:     host,
-		Port:     defaultPort,
+		Host:     cfg.Host,
+		Port:     cfg.Port,
 		commands: basicCommands(),
-		timeout:  10,
+		timeout:  cfg.ConnectTimeout,
 		wait:     &sync.WaitGroup{},
 		send:     make(chan ISCPCommand, 16),
 		recv:     make(chan ISCPCommand, 16),
