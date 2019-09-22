@@ -37,13 +37,12 @@ func SplitISCP(command ISCPCommand) (ISCPGroup, string) {
 // Command is the "friendly" wrapper around an ISCP command group.
 type Command struct {
 	Name      string
-	Title     string
 	Group     ISCPGroup
 	ParamType ParamType
 }
 
-// QueryCommand generates the "xxxQSTN" command for this Command.
-func (c *Command) QueryCommand() ISCPCommand {
+// CreateQuery generates the "xxxQSTN" command for this Command.
+func (c *Command) CreateQuery() ISCPCommand {
 	return ISCPCommand(string(c.Group) + queryParam)
 }
 
@@ -184,6 +183,8 @@ type CommandSet interface {
 	// for the given friendlyName name and parameter.
 	// An error is returned if the name or parameter is invalid.
 	CreateCommand(string, interface{}) (ISCPCommand, error)
+	// CreateQuery creates a QSTN command for the given friendly name.
+	CreateQuery(string) (ISCPCommand, error)
 }
 
 type basicCommandSet struct {
@@ -239,4 +240,12 @@ func (b *basicCommandSet) CreateCommand(name string, param interface{}) (ISCPCom
 		return "", err
 	}
 	return c.CreateCommand(param)
+}
+
+func (b *basicCommandSet) CreateQuery(name string) (ISCPCommand, error) {
+	c, err := b.ForName(name)
+	if err != nil {
+		return "", err
+	}
+	return c.CreateQuery(), nil
 }

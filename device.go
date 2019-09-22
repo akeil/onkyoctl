@@ -12,11 +12,15 @@ const (
 	protocol    = "tcp"
 )
 
+// Callback is the type for message callback functions.
+type Callback func(name, value string)
+
 // Device is an Onkyo device
 type Device struct {
 	Host     string
 	Port     int
 	commands CommandSet
+	callback Callback
 	timeout  int
 	conn     net.Conn
 	send     chan ISCPCommand
@@ -33,6 +37,12 @@ func NewDevice(host string) Device {
 		send:     make(chan ISCPCommand, 16),
 		recv:     make(chan ISCPCommand, 16),
 	}
+}
+
+// OnMessage sets the handler for received messages to the given function.
+// This will replace any existing handler.
+func (d *Device) OnMessage(cb Callback) {
+	d.callback = cb
 }
 
 // Start connects to the device and starts receiving messages.
@@ -65,6 +75,16 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 		return err
 	}
 	d.send <- command
+	return nil
+}
+
+// Query sends a QSTN command for the given friendly name.
+func (d *Device) Query(name string) error {
+	q, err := d.commands.CreateQuery(name)
+	if err != nil {
+		return err
+	}
+	d.SendISCP(q)
 	return nil
 }
 
@@ -107,7 +127,9 @@ func (d *Device) doReceive(command ISCPCommand) {
 		return
 	}
 	log.Printf("Received '%v %v'", name, value)
-	// TODO: callback
+	if d.callback != nil {
+		d.callback(name, value)
+	}
 }
 
 func (d *Device) connect() error {

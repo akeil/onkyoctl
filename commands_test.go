@@ -18,7 +18,7 @@ func TestFriendlyGenerateQuery(t *testing.T) {
 		Group: "PWR",
 	}
 
-	query := c.QueryCommand()
+	query := c.CreateQuery()
 	assertEqual(t, query, ISCPCommand("PWRQSTN"))
 }
 
@@ -288,4 +288,34 @@ func TestBasicRead(t *testing.T) {
 		}
 	}
 
+}
+
+func TestBasicQuery(t *testing.T) {
+	commands := []Command{
+		Command{
+			Name:      "power",
+			Group:     "PWR",
+			ParamType: "onOff",
+		},
+		Command{
+			Name:      "mute",
+			Group:     "AMT",
+			ParamType: "onOffToggle",
+		},
+	}
+	cs := NewBasicCommandSet(commands)
+
+	var actual ISCPCommand
+	var err error
+
+	actual, err = cs.CreateQuery("power")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("PWRQSTN"))
+
+	actual, err = cs.CreateQuery("mute")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("AMTQSTN"))
+
+	_, err = cs.CreateQuery("unkown")
+	assertErr(t, err)
 }

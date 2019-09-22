@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "fmt"
     "os"
 	"os/signal"
 
@@ -36,7 +37,11 @@ func runForever(dev onkyoctl.Device) {
     }
     defer dev.Stop()
 
-    dev.SendISCP(onkyoctl.ISCPCommand("PWRQSTN"))
+    dev.OnMessage(func(name, value string) {
+        fmt.Printf("Status: %v = %v\n", name, value)
+    })
+
+    dev.Query("power")
     dev.SendISCP(onkyoctl.ISCPCommand("MVLQSTN"))
     err = dev.SendCommand("volume", "up")
     if err != nil {
