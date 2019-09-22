@@ -127,3 +127,56 @@ func formatToggle(raw interface{}) (string, error) {
     }
     return "", errors.New("invalid parameter")
 }
+
+type CommandSet interface {
+    LookupCommand(ISCPCommand) (Command, error)
+    CreateCommand(string, interface{}) (ISCPCommand, error)
+}
+
+type basicCommandSet struct {
+    byGroup map[ISCPGroup]Command
+    byName  map[string]Command
+}
+
+func NewBasicCommandSet(commands []Command) CommandSet {
+    byGroup := make(map[ISCPGroup]Command)
+    byName := make(map[string]Command)
+    for _, c := range(commands) {
+        if c.Group != "" {
+            byGroup[c.Group] = c
+        }
+        if c.Name != "" {
+            byName[c.Name] = c
+        }
+    }
+
+    return &basicCommandSet{
+        byGroup: byGroup,
+        byName: byName,
+    }
+}
+
+func (b *basicCommandSet) LookupCommand(command ISCPCommand) (Command, error) {
+    group, _ := SplitISCP(command)
+    c, ok := b.byGroup[group]
+    if !ok {
+        return Command{}, errors.New("unknown ISCP command")
+    }
+    return c, nil
+}
+
+func (b *basicCommandSet) ForName(name string) (Command, error) {
+    c, ok := b.byName[name]
+    if !ok {
+        return Command{}, errors.New("unknown command")
+    }
+    return c, nil
+}
+
+func (b *basicCommandSet) CreateCommand(name string, param interface{}) (ISCPCommand, error) {
+    c, err := b.ForName(name)
+    if err != nil {
+        return "", err
+    }
+    return c.CreateCommand(param)
+}

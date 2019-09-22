@@ -141,3 +141,70 @@ func TestFormatOnOff(t *testing.T) {
     assertNoErr(t, err)
     assertEqual(t, actual, toggle)
 }
+
+
+func TestBasicCreate(t *testing.T) {
+    commands := []Command{
+        Command{
+            Name: "power",
+            Group: "PWR",
+            ParamType: "onOff",
+        },
+        Command{
+            Name: "mute",
+            Group: "AMT",
+            ParamType: "onOffToggle",
+        },
+    }
+    cs := NewBasicCommandSet(commands)
+
+    type TestCase struct {
+        Name string
+        Param interface{}
+        Expected ISCPCommand
+        ExpectError bool
+    }
+
+    cases := []TestCase{
+        TestCase{
+            Name: "power",
+            Param: "on",
+            Expected: ISCPCommand("PWR01"),
+            ExpectError: false,
+        },
+        TestCase{
+            Name: "power",
+            Param: "Off",
+            Expected: ISCPCommand("PWR00"),
+            ExpectError: false,
+        },
+        TestCase{
+            Name: "mute",
+            Param: "toggle",
+            Expected: ISCPCommand("AMTTG"),
+            ExpectError: false,
+        },
+        // unsupported param
+        TestCase{
+            Name: "power",
+            Param: "toggle",
+            ExpectError: true,
+        },
+        // unsupported command name
+        TestCase{
+            Name: "unknown",
+            Param: "on",
+            ExpectError: true,
+        },
+
+    }
+
+    for _, tc := range(cases) {
+        actual, err := cs.CreateCommand(tc.Name, tc.Param)
+        if tc.ExpectError {
+            assertErr(t, err)
+        } else {
+            assertEqual(t, actual, tc.Expected)
+        }
+    }
+}
