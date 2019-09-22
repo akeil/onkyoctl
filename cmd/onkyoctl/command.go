@@ -36,6 +36,8 @@ func main() {
     var commands = do.Arg("commands", "Commands to send, pairs of <name> <value> - e.g. 'power on volume up'").Required().Strings()
 
     status := app.Command("status", "Show device status")
+    var names = status.Arg("names", "Status items to query, empty for default").Strings()
+
     watch := app.Command("watch", "Watch device status")
 
     onkyo.SetLogLevel(onkyo.Error)
@@ -55,7 +57,7 @@ func main() {
             onkyo.SetLogLevel(onkyo.Debug)
         }
         device = setup(*cfgPath, *host, *port)
-        err = doStatus(device)
+        err = doStatus(device, *names)
 
     case watch.FullCommand():
         if *verbose {
@@ -70,7 +72,7 @@ func main() {
     }
 }
 
-func doStatus(device onkyo.Device) error {
+func doStatus(device onkyo.Device, names []string) error {
     err := device.Start()
     if err != nil {
         return err
@@ -79,17 +81,15 @@ func doStatus(device onkyo.Device) error {
 
     fmt.Printf("Status [%v]:\n", device.Host)
 
-    // TODO: use command lines args and use this list as default/fallback
-    names := []string{
-        "power",
-        "volume",
-        "mute",
-        "speaker-a",
-        "speaker-b",
-        "input",
-        "listen-mode",
-        "display",
-        "dimmer",
+    if len(names) == 0 {
+        names = []string{
+            "power",
+            "volume",
+            "mute",
+            "speaker-a",
+            "speaker-b",
+            "input",
+        }
     }
 
     // expect a reply for every query we send
