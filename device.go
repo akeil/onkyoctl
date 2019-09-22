@@ -101,6 +101,12 @@ func (d *Device) doSend(command ISCPCommand) {
 
 func (d *Device) doReceive(command ISCPCommand) {
 	log.Printf("Recv message: %v", command)
+	name, value, err := d.commands.ReadCommand(command)
+	if err != nil {
+		log.Printf("Error reading ISCP %q: %v", command, err)
+		return
+	}
+	log.Printf("Received '%v %v'", name, value)
 	// TODO: callback
 }
 
