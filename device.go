@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-    "time"
+	"time"
 )
 
 const (
@@ -14,24 +14,24 @@ const (
 
 // Device is an Onkyo device
 type Device struct {
-	Host string
-	Port int
+	Host     string
+	Port     int
 	commands CommandSet
-    timeout int
-	conn net.Conn
-	send chan ISCPCommand
-	recv chan ISCPCommand
+	timeout  int
+	conn     net.Conn
+	send     chan ISCPCommand
+	recv     chan ISCPCommand
 }
 
 // NewDevice sets up a new Onkyo device.
 func NewDevice(host string) Device {
 	return Device{
-		Host: host,
-		Port: defaultPort,
+		Host:     host,
+		Port:     defaultPort,
 		commands: basicCommands(),
-		timeout: 10,
-		send: make(chan ISCPCommand, 16),
-		recv: make(chan ISCPCommand, 16),
+		timeout:  10,
+		send:     make(chan ISCPCommand, 16),
+		recv:     make(chan ISCPCommand, 16),
 	}
 }
 
@@ -107,7 +107,7 @@ func (d *Device) doReceive(command ISCPCommand) {
 func (d *Device) connect() error {
 	addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
 	log.Printf("Connect to %v", addr)
-    timeout := time.Duration(d.timeout) * time.Second
+	timeout := time.Duration(d.timeout) * time.Second
 	conn, err := net.DialTimeout(protocol, addr, timeout)
 	if err != nil {
 		return err
@@ -169,26 +169,26 @@ func (d *Device) read() {
 
 func basicCommands() CommandSet {
 	commands := []Command{
-        Command{
-            Name: "power",
-            Group: "PWR",
-            ParamType: "onOff",
-        },
-        Command{
-            Name: "mute",
-            Group: "AMT",
-            ParamType: "onOffToggle",
-        },
 		Command{
-            Name: "speaker-a",
-            Group: "SPA",
-            ParamType: "onOff",
-        },
+			Name:      "power",
+			Group:     "PWR",
+			ParamType: "onOff",
+		},
 		Command{
-            Name: "speaker-b",
-            Group: "SPA",
-            ParamType: "onOff",
-        },
-    }
-    return NewBasicCommandSet(commands)
+			Name:      "mute",
+			Group:     "AMT",
+			ParamType: "onOffToggle",
+		},
+		Command{
+			Name:      "speaker-a",
+			Group:     "SPA",
+			ParamType: "onOff",
+		},
+		Command{
+			Name:      "speaker-b",
+			Group:     "SPA",
+			ParamType: "onOff",
+		},
+	}
+	return NewBasicCommandSet(commands)
 }

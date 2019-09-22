@@ -6,18 +6,14 @@ import (
 	"log"
 )
 
-// An ISCPCommand is a low-level command like PWR01 (power on)
-// or MVLUP (master volume up).
-type ISCPCommand string
-
 const (
 	iscpStart               = "!"
 	unitTypeReceiver        = "1"
 	headerSize       uint32 = 16
 	eISCPVersion     byte   = 0x01
 	terminator              = "\r\n"
-    cr                      = byte('\r')
-    lf                      = byte('\n')
+	cr                      = byte('\r')
+	lf                      = byte('\n')
 	eof                     = 0x1A
 )
 
@@ -195,7 +191,7 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	// - LF     1 byte
 	// - CR     1 byte
 	// - CRLF   2 bytes
-    // - <none>
+	// - <none>
 	offset := size - 1
 	if s[offset] == cr { // CR
 		offset--
@@ -208,7 +204,7 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	}
 
 	// for messages from device to controller, EOF should be mandatory.
-    // however, we don't mind if it is missing.
+	// however, we don't mind if it is missing.
 	if s[offset] == eof {
 		offset--
 	}

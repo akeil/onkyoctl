@@ -54,13 +54,13 @@ func TestISCPParse(t *testing.T) {
 			ExpectError: false,
 			Command:     "PWR01",
 		},
-        // no end marker (invalid according to spec, but we accept it)
+		// no end marker (invalid according to spec, but we accept it)
 		Case{
 			Data:        []byte("!1PWR01"),
 			ExpectError: false,
-            Command:     "PWR01",
+			Command:     "PWR01",
 		},
-        //invalid end styles
+		//invalid end styles
 		/*
 		   Case{
 		       Data: []byte("!1PWR01\n\n"),
