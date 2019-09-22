@@ -214,7 +214,7 @@ func basicCommands() CommandSet {
 		},
 		Command{
 			Name:      "speaker-b",
-			Group:     "SPA",
+			Group:     "SPB",
 			ParamType: "onOff",
 		},
 	}
