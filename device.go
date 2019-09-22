@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+    "time"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 type Device struct {
 	Host string
 	Port int
+    timeout int
 	conn net.Conn
 	send chan ISCPCommand
 	recv chan ISCPCommand
@@ -91,11 +93,11 @@ func (d *Device) doReceive(command ISCPCommand) {
 func (d *Device) connect() error {
 	addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
 	log.Printf("Connect to %v", addr)
-	conn, err := net.Dial(protocol, addr)
+    timeout := time.Duration(d.timeout) * time.Second
+	conn, err := net.DialTimeout(protocol, addr, timeout)
 	if err != nil {
 		return err
 	}
-	// TODO: Timeouts
 	// TODO: maybe handshake to check we are connected to an onkyo device?
 	log.Println("Connected.")
 	d.conn = conn
