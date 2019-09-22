@@ -1,11 +1,13 @@
 package main
 
 import (
-    "log"
+    "errors"
     "fmt"
+    "log"
     "os"
 	"os/signal"
     "path"
+    "sync"
     "time"
 
     "gopkg.in/alecthomas/kingpin.v2"
@@ -87,15 +89,46 @@ func doStatus(cfgPath, host string, port int) error {
         "display",
         "dimmer",
     }
+
+    // expect a reply for every query we send
+    var wait sync.WaitGroup
+
+    device.OnMessage(func(name, value string) {
+        fmt.Printf("%v: %v\n", name, value)
+
+        // note: not *quite* correct - we accept duplicate responses
+        if contains(names, name) {
+            wait.Done()
+        }
+    })
+
     for _, name := range(names) {
+        wait.Add(1)
         device.Query(name)
     }
-    // TODO: wait for responses - not *forever*
-    stop := make(chan os.Signal, 1)
-    signal.Notify(stop, os.Interrupt)
-    <-stop  // wait for SIGINT
 
-    return nil
+    // wait until all responses are received or timeout
+    done := make(chan int)
+	go func() {
+		defer close(done)
+		wait.Wait()
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-time.After(5 * time.Second):
+		return errors.New("Timeout waiting for response")
+	}
+}
+
+func contains(haystack []string, needle string) bool {
+    for _, item := range(haystack) {
+        if item == needle {
+            return true
+        }
+    }
+    return false
 }
 
 func doWatch(cfgPath, host string, port int) error {

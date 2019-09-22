@@ -21,7 +21,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-// ReadConfig reads configuration froin ini format from the given source.
+// ReadConfig reads configuration from ini format from the given source.
 // Source can be a path, an opened file or a []byte array.
 func ReadConfig(source interface{}) (*Config, error) {
 	iniValues, err := ini.Load(source)

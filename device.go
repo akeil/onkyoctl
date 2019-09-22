@@ -214,7 +214,7 @@ func (d *Device) read() {
 				d.connectionClosed()
 				return
 			}
-			logError("Read error: %v", err)
+			logWarning("Read error: %v", err)
 			return
 		}
 		logDebug("Read header (%v): %v", numRead, buf)
@@ -232,7 +232,7 @@ func (d *Device) read() {
 				d.connectionClosed()
 				return
 			}
-			logError("Read error: %v", err)
+			logWarning("Read error: %v", err)
 			return
 		}
 		logDebug("Read payload (%v): %v", numPayload, payload)
