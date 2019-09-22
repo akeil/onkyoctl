@@ -147,7 +147,7 @@ func formatOnOff(raw interface{}) (string, error) {
 	}
 
 	if result == "" {
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 	return result, nil
 }
@@ -159,7 +159,7 @@ func parseOnOff(raw string) (string, error) {
 	case "01":
 		return "on", nil
 	default:
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 }
 
@@ -187,7 +187,7 @@ func formatEnum(lookup map[string]string, raw interface{}) (string, error) {
 			return key, nil
 		}
 	}
-	return "", fmt.Errorf("invalid parameter %v", raw)
+	return "", fmt.Errorf("invalid parameter %q", raw)
 }
 
 func parseEnum(lookup map[string]string, raw string) (string, error) {
@@ -195,7 +195,7 @@ func parseEnum(lookup map[string]string, raw string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return "", fmt.Errorf("invalid parameter %v", raw)
+	return "", fmt.Errorf("invalid parameter %q", raw)
 }
 
 func formatEnumToggle(lookup map[string]string, raw interface{}) (string, error) {
@@ -250,12 +250,12 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 			return "", convErr
 		}
 	default:
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 
 	// bounds check
 	if numeric < float64(lower) || numeric > float64(upper) {
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 
 	if scale == 0 {
@@ -265,7 +265,7 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 	rounded := math.Round(scaled)
 	// rounding should not change the value
 	if rounded != scaled {
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 
 	hex := fmt.Sprintf("%X", int(rounded))
@@ -290,7 +290,7 @@ func parseIntRange(lower, upper, scale int, raw string) (string, error) {
 
 	// bounds check
 	if downscaled < float64(lower) || downscaled > float64(upper) {
-		return "", fmt.Errorf("invalid parameter %v", raw)
+		return "", fmt.Errorf("invalid parameter %q", raw)
 	}
 
 	return fmt.Sprintf("%v", downscaled), nil
@@ -320,14 +320,14 @@ func formatToggle(raw interface{}) (string, error) {
 			return "TG", nil
 		}
 	}
-	return "", fmt.Errorf("invalid parameter %v", raw)
+	return "", fmt.Errorf("invalid parameter %q", raw)
 }
 
 func parseToggle(raw string) (string, error) {
 	if raw == "TG" {
 		return "toggle", nil
 	}
-	return "", fmt.Errorf("invalid parameter %v", raw)
+	return "", fmt.Errorf("invalid parameter %q", raw)
 }
 
 // A CommandSet represnts a set of known/supported commands
