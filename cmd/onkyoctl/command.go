@@ -34,19 +34,26 @@ func main() {
     status := app.Command("status", "Show device status")
     watch := app.Command("watch", "Watch device status")
 
-    if *verbose {
-        onkyoctl.SetLogLevel(onkyoctl.Debug)
-    } else {
-        onkyoctl.SetLogLevel(onkyoctl.Error)
-    }
+    onkyoctl.SetLogLevel(onkyoctl.Error)
 
     var err error
     switch kingpin.MustParse(app.Parse(os.Args[1:])) {
     case do.FullCommand():
+        if *verbose {
+            onkyoctl.SetLogLevel(onkyoctl.Debug)
+        }
         err = doCommand(*host, *port, *name, *value)
+
     case status.FullCommand():
+        if *verbose {
+            onkyoctl.SetLogLevel(onkyoctl.Debug)
+        }
         err = doStatus(*host, *port)
+
     case watch.FullCommand():
+        if *verbose {
+            onkyoctl.SetLogLevel(onkyoctl.Debug)
+        }
         err = doWatch(*host, *port)
     }
 

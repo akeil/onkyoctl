@@ -1,7 +1,9 @@
 package onkyoctl
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -26,6 +28,7 @@ type Device struct {
 	send     chan ISCPCommand
 	recv     chan ISCPCommand
 	wait     *sync.WaitGroup
+	isRunning bool
 }
 
 // NewDevice sets up a new Onkyo device.
@@ -49,24 +52,32 @@ func (d *Device) OnMessage(cb Callback) {
 
 // Start connects to the device and starts receiving messages.
 func (d *Device) Start() error {
+	if d.isRunning {
+		return errors.New("already started")
+	}
 	logInfo("Start device [%v:%v]", d.Host, d.Port)
-	// TODO: if already started return err
+
 	err := d.connect()
 	if err != nil {
 		return err
 	}
+
+	d.isRunning = true
 	go d.loop()
+
 	return nil
 }
 
 // Stop disconnects from the device and stop message processing.
 func (d *Device) Stop() {
 	logInfo("Stop device [%v:%v]", d.Host, d.Port)
-	// if not started, return
+	if !d.isRunning {
+		return
+	}
 
+	d.disconnect()
 	close(d.recv)
 	close(d.send)
-	d.disconnect()
 }
 
 // SendCommand sends an "friendly" command (e.g. "power off") to the device.
@@ -77,8 +88,8 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.SendISCP(command)
-	return nil
+
+	return d.SendISCP(command)
 }
 
 // Query sends a QSTN command for the given friendly name.
@@ -87,16 +98,20 @@ func (d *Device) Query(name string) error {
 	if err != nil {
 		return err
 	}
-	d.SendISCP(q)
-	return nil
+	return d.SendISCP(q)
 }
 
 // SendISCP sends a raw ISCP command to the device.
-func (d *Device) SendISCP(command ISCPCommand) {
+func (d *Device) SendISCP(command ISCPCommand) error {
+	if !d.isRunning {
+		return errors.New("device not started")
+	}
+
 	logDebug("Dispatch %v", command)
 
 	d.wait.Add(1)
 	d.send <- command
+	return nil
 }
 
 // WaitSend waits for all submitted messages to be sent.
@@ -177,10 +192,19 @@ func (d *Device) disconnect() {
 		// not connected
 		return
 	}
+	logDebug("Disconnect.")
 	err := d.conn.Close()
 	if err != nil {
 		logWarning("Error closing connection: %v", err)
 	}
+	d.conn = nil
+}
+
+func (d *Device) connectionClosed() {
+	// TODO: apparently, host closes connection when another client connects
+	// should we exit? or reconnect?
+	logError("Connection closed by remote device.")
+	d.Stop()
 }
 
 func (d *Device) read() {
@@ -189,8 +213,11 @@ func (d *Device) read() {
 		buf := make([]byte, headerSize)
 		numRead, err := d.conn.Read(buf)
 		if err != nil {
+			if err == io.EOF {
+				d.connectionClosed()
+				return
+			}
 			logError("Read error: %v", err)
-			// host closes (EOF) when another client connects?
 			return
 		}
 		logDebug("Read header (%v): %v", numRead, buf)
@@ -204,8 +231,11 @@ func (d *Device) read() {
 		payload := make([]byte, payloadSize)
 		numPayload, err := d.conn.Read(payload)
 		if err != nil {
+			if err == io.EOF {
+				d.connectionClosed()
+				return
+			}
 			logError("Read error: %v", err)
-			// host closes (EOF) when another client connects?
 			return
 		}
 		logDebug("Read payload (%v): %v", numPayload, payload)
@@ -258,9 +288,9 @@ func basicCommands() CommandSet {
 			Group:     "DIF",
 			ParamType: "enumToggle",
 			Lookup: map[string]string{
-				"00": "mode-1",
-				"01": "mode-2",
-				"02": "mode-3",
+				"00": "default",
+				"01": "listening",
+				"02": "source",
 				"03": "mode-4",
 			},
 		},
@@ -273,7 +303,7 @@ func basicCommands() CommandSet {
 				"01": "cbl-sat",
 				"02": "game",
 				"03": "aux1",
-				"20": "tape-1",
+				"20": "tv-tape",
 			},
 		},
 		Command{
