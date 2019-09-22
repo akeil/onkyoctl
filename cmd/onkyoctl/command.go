@@ -25,15 +25,20 @@ func main() {
 
     var host = app.Flag("host", "Hostname or IP address").String()
     var port = app.Flag("port", "Port number").Default("60128").Short('p').Int()
+    var verbose = app.Flag("verbose", "Verbose output").Short('v').Bool()
 
     do := app.Command("do", "Execute a command").Default()
-    var name = do.Arg("name", "The proprety to change").Required().String()
+    var name = do.Arg("name", "The property to change").Required().String()
     var value = do.Arg("value", "The value to set").String()
 
     status := app.Command("status", "Show device status")
     watch := app.Command("watch", "Watch device status")
 
-    onkyoctl.SetLogLevel(onkyoctl.Debug)
+    if *verbose {
+        onkyoctl.SetLogLevel(onkyoctl.Debug)
+    } else {
+        onkyoctl.SetLogLevel(onkyoctl.Error)
+    }
 
     var err error
     switch kingpin.MustParse(app.Parse(os.Args[1:])) {
@@ -58,6 +63,8 @@ func doStatus(host string, port int) error {
         return err
     }
     defer device.Stop()
+
+    fmt.Printf("Device Status:\n")
 
     // TODO: use command lines args and use this list as default/fallback
     names := []string{
@@ -119,7 +126,7 @@ func doCommand(host string, port int, name, value string) error {
 func setup(host string, port int) onkyoctl.Device {
     device := onkyoctl.NewDevice(host)
     device.OnMessage(func(name, value string) {
-        fmt.Printf("Status: %v = %v\n", name, value)
+        fmt.Printf("%v = %v\n", name, value)
     })
     return device
 }
