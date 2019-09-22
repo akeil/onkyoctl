@@ -142,6 +142,45 @@ func TestFormatOnOff(t *testing.T) {
 	assertEqual(t, actual, toggle)
 }
 
+func TestParseOnOff(t *testing.T) {
+	c := Command{
+		Group:     "PWR",
+		ParamType: "onOff",
+	}
+	type TestCase struct {
+		Raw         string
+		ExpectError bool
+		Expected    string
+	}
+	cases := []TestCase{
+		TestCase{Raw: "01", ExpectError: false, Expected: "on"},
+		TestCase{Raw: "00", ExpectError: false, Expected: "off"},
+		TestCase{Raw: "xx", ExpectError: true},
+		TestCase{Raw: "", ExpectError: true},
+	}
+
+	var actual string
+	var err error
+	for _, tc := range cases {
+		actual, err = c.ParseParam(tc.Raw)
+		if tc.ExpectError {
+			assertErr(t, err)
+		} else {
+			assertEqual(t, actual, tc.Expected)
+		}
+	}
+
+	// no toggle
+	_, err = c.ParseParam("TG")
+	assertErr(t, err)
+
+	// with toggle
+	c.ParamType = "onOffToggle"
+	actual, err = c.ParseParam("TG")
+	assertNoErr(t, err)
+	assertEqual(t, actual, "toggle")
+}
+
 func TestBasicCreate(t *testing.T) {
 	commands := []Command{
 		Command{
@@ -205,4 +244,48 @@ func TestBasicCreate(t *testing.T) {
 			assertEqual(t, actual, tc.Expected)
 		}
 	}
+}
+
+func TestBasicRead(t *testing.T) {
+	commands := []Command{
+		Command{
+			Name:      "power",
+			Group:     "PWR",
+			ParamType: "onOff",
+		},
+		Command{
+			Name:      "mute",
+			Group:     "AMT",
+			ParamType: "onOffToggle",
+		},
+	}
+	cs := NewBasicCommandSet(commands)
+
+	type TestCase struct {
+		ISCP        ISCPCommand
+		ExpectError bool
+		Name        string
+		Value       string
+	}
+	cases := []TestCase{
+		TestCase{ISCP: "PWR01", ExpectError: false, Name: "power", Value: "on"},
+		TestCase{ISCP: "PWR00", ExpectError: false, Name: "power", Value: "off"},
+		TestCase{ISCP: "PWRxx", ExpectError: true},
+		TestCase{ISCP: "PWR", ExpectError: true},
+
+		TestCase{ISCP: "AMTTG", ExpectError: false, Name: "mute", Value: "toggle"},
+
+		TestCase{ISCP: "FOO", ExpectError: true},
+	}
+
+	for _, tc := range cases {
+		name, value, err := cs.ReadCommand(tc.ISCP)
+		if tc.ExpectError {
+			assertErr(t, err)
+		} else {
+			assertEqual(t, name, tc.Name)
+			assertEqual(t, value, tc.Value)
+		}
+	}
+
 }

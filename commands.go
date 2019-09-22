@@ -67,6 +67,17 @@ func (c *Command) formatParam(raw interface{}) (string, error) {
 	return "", errors.New("invalid param type")
 }
 
+// ParseParam converts the ISCP param value to the friendly version.
+func (c *Command) ParseParam(raw string) (string, error) {
+	switch c.ParamType {
+	case paramOnOff:
+		return parseOnOff(raw)
+	case paramOnOffToggle:
+		return parseOnOffToggle(raw)
+	}
+	return "", errors.New("invalid param type")
+}
+
 func formatOnOff(raw interface{}) (string, error) {
 	var result string
 
@@ -118,12 +129,31 @@ func formatOnOff(raw interface{}) (string, error) {
 	return result, nil
 }
 
+func parseOnOff(raw string) (string, error) {
+	switch raw {
+	case "00":
+		return "off", nil
+	case "01":
+		return "on", nil
+	default:
+		return "", errors.New("invalid parameter")
+	}
+}
+
 func formatOnOffToggle(raw interface{}) (string, error) {
 	result, err := formatToggle(raw)
 	if err == nil {
 		return result, err
 	}
 	return formatOnOff(raw)
+}
+
+func parseOnOffToggle(raw string) (string, error) {
+	parsed, err := parseToggle(raw)
+	if err == nil {
+		return parsed, err
+	}
+	return parseOnOff(raw)
 }
 
 func formatToggle(raw interface{}) (string, error) {
@@ -137,11 +167,19 @@ func formatToggle(raw interface{}) (string, error) {
 	return "", errors.New("invalid parameter")
 }
 
+func parseToggle(raw string) (string, error) {
+	if raw == "TG" {
+		return "toggle", nil
+	}
+	return "", errors.New("invalid parameter")
+}
+
 // A CommandSet represnts a set of known/supported commands
 // and can be used to convert the "friendly" version to ISCP and vice-versa.
 type CommandSet interface {
-	// LookupCommand finds the command definition for an ISCP command
-	LookupCommand(ISCPCommand) (Command, error)
+	// ReadCommand finds the command definition for an ISCP command
+	// and converts the parameter.
+	ReadCommand(ISCPCommand) (string, string, error)
 	// CreateCommand creates an ISCP command
 	// for the given friendlyName name and parameter.
 	// An error is returned if the name or parameter is invalid.
@@ -173,13 +211,18 @@ func NewBasicCommandSet(commands []Command) CommandSet {
 	}
 }
 
-func (b *basicCommandSet) LookupCommand(command ISCPCommand) (Command, error) {
-	group, _ := SplitISCP(command)
+func (b *basicCommandSet) ReadCommand(command ISCPCommand) (string, string, error) {
+	group, param := SplitISCP(command)
 	c, ok := b.byGroup[group]
 	if !ok {
-		return Command{}, errors.New("unknown ISCP command")
+		return "", "", errors.New("unknown ISCP command")
 	}
-	return c, nil
+
+	value, err := c.ParseParam(param)
+	if err != nil {
+		return "", "", err
+	}
+	return c.Name, value, nil
 }
 
 func (b *basicCommandSet) ForName(name string) (Command, error) {
