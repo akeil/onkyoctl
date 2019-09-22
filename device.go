@@ -26,7 +26,7 @@ type Device struct {
 	conn     net.Conn
 	send     chan ISCPCommand
 	recv     chan ISCPCommand
-	wait	 *sync.WaitGroup
+	wait     *sync.WaitGroup
 }
 
 // NewDevice sets up a new Onkyo device.
@@ -50,7 +50,7 @@ func (d *Device) OnMessage(cb Callback) {
 
 // Start connects to the device and starts receiving messages.
 func (d *Device) Start() error {
-	log.Printf("Start %v", d)
+	logInfo("Start device [%v:%v]", d.Host, d.Port)
 	// TODO: if already started return err
 	err := d.connect()
 	if err != nil {
@@ -62,7 +62,7 @@ func (d *Device) Start() error {
 
 // Stop disconnects from the device and stop message processing.
 func (d *Device) Stop() {
-	log.Printf("Stop %v", d)
+	logInfo("Stop device [%v:%v]", d.Host, d.Port)
 	// if not started, return
 
 	close(d.recv)
@@ -72,7 +72,8 @@ func (d *Device) Stop() {
 
 // SendCommand sends an "friendly" command (e.g. "power off") to the device.
 func (d *Device) SendCommand(name string, param interface{}) error {
-	log.Printf("Send command %v: %v", name, param)
+	logDebug("Dispatch command %v: %v", name, param)
+
 	command, err := d.commands.CreateCommand(name, param)
 	if err != nil {
 		return err
@@ -93,6 +94,8 @@ func (d *Device) Query(name string) error {
 
 // SendISCP sends a raw ISCP command to the device.
 func (d *Device) SendISCP(command ISCPCommand) {
+	logDebug("Dispatch %v", command)
+
 	d.wait.Add(1)
 	d.send <- command
 }
@@ -132,12 +135,12 @@ func (d *Device) doSend(command ISCPCommand) {
 	defer d.wait.Done()
 
 	msg := NewEISCPMessage(command)
-	log.Printf("Send message: %v", msg)
+	logDebug("Send (TCP): %v", msg)
 	numWritten, err := d.conn.Write(msg.Raw())
 	if err != nil {
-		log.Printf("Error writing to connection: %v", err)
+		logError("Error writing to connection: %v", err)
 	} else {
-		log.Printf("Wrote %v bytes", numWritten)
+		logDebug("Wrote %v bytes", numWritten)
 	}
 }
 
@@ -145,25 +148,26 @@ func (d *Device) doReceive(command ISCPCommand) {
 	log.Printf("Recv message: %v", command)
 	name, value, err := d.commands.ReadCommand(command)
 	if err != nil {
-		log.Printf("Error reading ISCP %q: %v", command, err)
+		logWarning("Error reading %q: %v", command, err)
 		return
 	}
-	log.Printf("Received '%v %v'", name, value)
+	logDebug("Received '%v %v'", name, value)
 	if d.callback != nil {
 		d.callback(name, value)
 	}
 }
 
 func (d *Device) connect() error {
+	logInfo("Connect to %v:%v ...", d.Host, d.Port)
+
 	addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
-	log.Printf("Connect to %v", addr)
 	timeout := time.Duration(d.timeout) * time.Second
 	conn, err := net.DialTimeout(protocol, addr, timeout)
 	if err != nil {
 		return err
 	}
 	// TODO: maybe handshake to check we are connected to an onkyo device?
-	log.Println("Connected.")
+	logInfo("Connected.")
 	d.conn = conn
 	go d.read()
 	return nil
@@ -176,7 +180,7 @@ func (d *Device) disconnect() {
 	}
 	err := d.conn.Close()
 	if err != nil {
-		log.Printf("Error closing connection: %v", err)
+		logWarning("Error closing connection: %v", err)
 	}
 }
 
@@ -186,14 +190,14 @@ func (d *Device) read() {
 		buf := make([]byte, headerSize)
 		numRead, err := d.conn.Read(buf)
 		if err != nil {
-			log.Printf("Read error: %v", err)
+			logError("Read error: %v", err)
 			// host closes (EOF) when another client connects?
 			return
 		}
-		log.Printf("Read: %v - %v", numRead, buf)
+		log.Printf("Read header (%v): %v", numRead, buf)
 		_, payloadSize, err := ParseHeader(buf)
 		if err != nil {
-			log.Printf("bad message data: %v", err)
+			logWarning("Discard bad message: %v", err)
 			continue
 		}
 
@@ -201,19 +205,18 @@ func (d *Device) read() {
 		payload := make([]byte, payloadSize)
 		numPayload, err := d.conn.Read(payload)
 		if err != nil {
-			log.Printf("Read error: %v", err)
+			logError("Read error: %v", err)
 			// host closes (EOF) when another client connects?
 			return
 		}
-		log.Printf("Read %v payload bytes", numPayload)
+		logDebug("Read payload (%v): %v", numPayload, payload)
 
 		iscp, err := ParseISCP(payload)
 		if err != nil {
-			log.Printf("invalid ISCP message: %v", err)
+			logWarning("Discard invalid message: %v", err)
 			continue
 		}
 		d.recv <- iscp.Command()
-
 	}
 }
 

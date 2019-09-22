@@ -33,6 +33,8 @@ func main() {
     status := app.Command("status", "Show device status")
     watch := app.Command("watch", "Watch device status")
 
+    onkyoctl.SetLogLevel(onkyoctl.Debug)
+
     var err error
     switch kingpin.MustParse(app.Parse(os.Args[1:])) {
     case do.FullCommand():
