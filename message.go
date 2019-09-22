@@ -16,7 +16,9 @@ const (
 	headerSize       uint32 = 16
 	eISCPVersion     byte   = 0x01
 	terminator              = "\r\n"
-	endMarker               = 0x1A
+    cr                      = byte('\r')
+    lf                      = byte('\n')
+	eof                     = 0x1A
 )
 
 // ISCPMessage is the base message for ISCP.
@@ -193,9 +195,8 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	// - LF     1 byte
 	// - CR     1 byte
 	// - CRLF   2 bytes
+    // - <none>
 	offset := size - 1
-	cr := byte('\r')
-	lf := byte('\n')
 	if s[offset] == cr { // CR
 		offset--
 
@@ -204,12 +205,11 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 		if s[offset] == cr { // CRLF
 			offset--
 		}
-	} else {
-		return nil, errors.New("missing terminator at message end")
 	}
 
-	// not sure if the endmarker is mandatory
-	if s[offset] == endMarker {
+	// for messages from device to controller, EOF should be mandatory.
+    // however, we don't mind if it is missing.
+	if s[offset] == eof {
 		offset--
 	}
 

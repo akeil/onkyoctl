@@ -30,7 +30,7 @@ func NewDevice(host string) Device {
 	}
 }
 
-// Start connects to the device and strts receiving messages.
+// Start connects to the device and starts receiving messages.
 func (d *Device) Start() error {
 	log.Printf("Start %v", d)
 	// TODO: if already started return err
