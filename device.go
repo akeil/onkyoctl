@@ -33,7 +33,7 @@ func NewDevice(cfg *Config) Device {
 	return Device{
 		Host:     cfg.Host,
 		Port:     cfg.Port,
-		commands: basicCommands(),
+		commands: cfg.Commands,
 		timeout:  cfg.ConnectTimeout,
 		wait:     &sync.WaitGroup{},
 		send:     make(chan ISCPCommand, 16),
@@ -81,6 +81,10 @@ func (d *Device) Stop() {
 func (d *Device) SendCommand(name string, param interface{}) error {
 	logDebug("Dispatch command %v: %v", name, param)
 
+	if d.commands == nil {
+		return errors.New("command set ist not defined")
+	}
+
 	command, err := d.commands.CreateCommand(name, param)
 	if err != nil {
 		return err
@@ -91,6 +95,10 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 
 // Query sends a QSTN command for the given friendly name.
 func (d *Device) Query(name string) error {
+	if d.commands == nil {
+		return errors.New("command set ist not defined")
+	}
+
 	q, err := d.commands.CreateQuery(name)
 	if err != nil {
 		return err
@@ -157,6 +165,11 @@ func (d *Device) doSend(command ISCPCommand) {
 
 func (d *Device) doReceive(command ISCPCommand) {
 	logDebug("Receive message: %v", command)
+	if d.commands == nil {
+		logWarning("Command set ist not defined, ignoring ISCP message.")
+		return
+	}
+
 	name, value, err := d.commands.ReadCommand(command)
 	if err != nil {
 		logWarning("Error reading %q: %v", command, err)
@@ -246,7 +259,8 @@ func (d *Device) read() {
 	}
 }
 
-func basicCommands() CommandSet {
+// BasicCommands creates a command set with some commonly used commands.
+func BasicCommands() CommandSet {
 	commands := []Command{
 		Command{
 			Name:      "power",

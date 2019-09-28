@@ -11,6 +11,7 @@ type Config struct {
 	Host           string
 	Port           int
 	ConnectTimeout int
+	Commands	   CommandSet
 }
 
 // DefaultConfig returns a Config struct with default values.

@@ -149,6 +149,16 @@ Some selected commands may be mapped to events:
 | NDS--W   | net-usb-status  | rear-wifi-adaptor       | net-usb-status |           |
 | NDS--B   | net-usb-status  | rear-bluetooth-adaptor  | net-usb-status |           |
 | NDS--x   | net-usb-status  | rear-disabled           | net-usb-status |           |
+| TFRB+nT+n | tone-front     | bass +2, treble +1      | tone-front     |           |
+| TFRBnn    | tone-front     | +/-nn dB                | tone-bass      |           |
+| TFRTnn    | tone-front     | +/-nn dB                | tone-treble    |           |
+| TFRBUP    | tone-front     | up                      | tone-bass      |           |
+| TFRBDOWN  | tone-front     | down                    | tone-bass      |           |
+| TFRTUP    | tone-front     | up                      | tone-treble    |           |
+| TFRTDOWN  | tone-front     | down                    | tone-treble    |           |
+| NSBOFF    | network-standby | off                    | network-standby |           |
+| NSBON     | network-standby | on                     | network-standby |           |
+| NSBQSTN   | network-standby | query                  | network-standby |           |
 
 
 ### Volume (MVL)
@@ -163,3 +173,27 @@ It seems that we need to send the hex-string for this.
 E.g. for `26`
 we send `1A` (string)
 effectively `0x31 0x41` (bytes).
+
+### Tone Front (TFR)
+Values look like this when the current status is broadcast:
+```
+TFRB+2T+1   Bass +2dB, Treble +1dB
+FRB+3T00    Bass +3dB, Treble +0dB
+TFRB+3T-1   Bass +2dB, Treble -1dB
+```
+
+for writing, we can (must) address bass and treble separately:
+```
+TFRB-5  Bass -5
+TFRT+4  Treble +4
+```
+
+It would be more intuitive to treat these as *two* properties: bass and treble.
+
+For writing, we must support two properties:
+
+- TFR[B] / bass
+- TFR[T] / treble
+
+and for reading we must generate updates for two properties
+from one ISCP message.

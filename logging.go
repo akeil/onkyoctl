@@ -10,10 +10,15 @@ import (
 type LogLevel int
 
 const (
+	// Debug log level
 	Debug LogLevel = iota
+	// Info log level
 	Info
+	// Warning log level
 	Warning
+	// Error log level
 	Error
+	// NoLog means no messages are logged, regardless of severity
 	NoLog
 )
 

@@ -178,6 +178,7 @@ func doCommands(device onkyo.Device, pairs []string) error {
 func setup(cfgPath, host string, port int) onkyo.Device {
     var err error
     cfg := onkyo.DefaultConfig()
+    cfg.Commands = onkyo.BasicCommands()
 
     // explicit param or default
     if cfgPath == "" {
