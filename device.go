@@ -16,35 +16,54 @@ type Callback func(name, value string)
 
 // Device is an Onkyo device
 type Device struct {
-	Host      string
-	Port      int
-	commands  CommandSet
-	callback  Callback
-	timeout   int
-	conn      net.Conn
-	send      chan ISCPCommand
-	recv      chan ISCPCommand
-	wait      *sync.WaitGroup
-	isRunning bool
+	Host           string
+	Port           int
+	commands       CommandSet
+	callback       Callback
+	onConnect      func()
+	onDisconnect   func()
+	timeout        int
+	conn           net.Conn
+	send           chan ISCPCommand
+	recv           chan ISCPCommand
+	wait           *sync.WaitGroup
+	reco           *time.Timer
+	autoConnect    bool
+	allowReconnect bool
+	reconnectTime  time.Duration
+	isRunning      bool
 }
 
 // NewDevice sets up a new Onkyo device.
 func NewDevice(cfg *Config) Device {
 	return Device{
-		Host:     cfg.Host,
-		Port:     cfg.Port,
-		commands: cfg.Commands,
-		timeout:  cfg.ConnectTimeout,
-		wait:     &sync.WaitGroup{},
-		send:     make(chan ISCPCommand, 16),
-		recv:     make(chan ISCPCommand, 16),
+		Host:           cfg.Host,
+		Port:           cfg.Port,
+		commands:       cfg.Commands,
+		timeout:        cfg.ConnectTimeout,
+		wait:           &sync.WaitGroup{},
+		send:           make(chan ISCPCommand, 16),
+		recv:           make(chan ISCPCommand, 16),
+		autoConnect:    cfg.AutoConnect,
+		allowReconnect: cfg.AllowReconnect,
+		reconnectTime:  time.Duration(cfg.ReconnectSeconds) * time.Second,
 	}
 }
 
 // OnMessage sets the handler for received messages to the given function.
 // This will replace any existing handler.
-func (d *Device) OnMessage(cb Callback) {
-	d.callback = cb
+func (d *Device) OnMessage(callback Callback) {
+	d.callback = callback
+}
+
+// OnDisconnected is called when the device is disconnected.
+func (d *Device) OnDisconnected(callback func()) {
+	d.onDisconnect = callback
+}
+
+// OnConnected is called when the deivce is (re-)connected.
+func (d *Device) OnConnected(callback func()) {
+	d.onConnect = callback
 }
 
 // Start connects to the device and starts receiving messages.
@@ -53,6 +72,8 @@ func (d *Device) Start() error {
 		return errors.New("already started")
 	}
 	logInfo("Start device [%v:%v]", d.Host, d.Port)
+
+	d.reco = time.NewTimer(d.reconnectTime)
 
 	err := d.connect()
 	if err != nil {
@@ -112,6 +133,11 @@ func (d *Device) SendISCP(command ISCPCommand) error {
 		return errors.New("device not started")
 	}
 
+	err := d.connectIfRequired()
+	if err != nil {
+		return err
+	}
+
 	logDebug("Dispatch %v", command)
 
 	d.wait.Add(1)
@@ -138,6 +164,8 @@ func (d *Device) WaitSend(timeout time.Duration) {
 func (d *Device) loop() {
 	for {
 		select {
+		case <-d.reco.C:
+			d.reconnect()
 		case command, more := <-d.recv:
 			if more {
 				d.doReceive(command)
@@ -184,6 +212,8 @@ func (d *Device) doReceive(command ISCPCommand) {
 func (d *Device) connect() error {
 	logInfo("Connect to %v:%v ...", d.Host, d.Port)
 
+	d.reco.Stop()
+
 	addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
 	timeout := time.Duration(d.timeout) * time.Second
 	conn, err := net.DialTimeout(protocol, addr, timeout)
@@ -194,12 +224,31 @@ func (d *Device) connect() error {
 	logInfo("Connected.")
 	d.conn = conn
 	go d.read()
+
+	if d.onConnect != nil {
+		go d.onConnect()
+	}
 	return nil
 }
 
+func (d *Device) isConnected() bool {
+	return d.conn != nil
+}
+
+func (d *Device) connectIfRequired() error {
+	if d.isConnected() {
+		return nil
+	}
+
+	if d.autoConnect {
+		return d.connect()
+	}
+
+	return errors.New("device not connected")
+}
+
 func (d *Device) disconnect() {
-	if d.conn == nil {
-		// not connected
+	if !d.isConnected() {
 		return
 	}
 	logDebug("Disconnect.")
@@ -208,23 +257,49 @@ func (d *Device) disconnect() {
 		logWarning("Error closing connection: %v", err)
 	}
 	d.conn = nil
+
+	if d.onDisconnect != nil {
+		go d.onDisconnect()
+	}
 }
 
-func (d *Device) connectionClosed() {
-	// TODO: apparently, host closes connection when another client connects
-	// should we exit? or reconnect?
+func (d *Device) connectionLost() {
+	// host closes connection when another client connects
 	logError("Connection closed by remote device.")
-	d.Stop()
+	d.disconnect()
+	if d.allowReconnect {
+		d.reco.Reset(d.reconnectTime)
+	}
+}
+
+func (d *Device) reconnect() {
+	logDebug("Reconnect...")
+	if d.isConnected() {
+		return
+	}
+	err := d.connect()
+	if err != nil {
+		logError("Reconnect failed: %v", err)
+		// schedule the next attempt
+		if d.allowReconnect {
+			d.reco.Reset(d.reconnectTime)
+		}
+	}
 }
 
 func (d *Device) read() {
 	for {
+		// TODO: not thread-safe
+		if !d.isConnected() {
+			return
+		}
+
 		// read message header
 		buf := make([]byte, headerSize)
 		numRead, err := d.conn.Read(buf)
 		if err != nil {
 			if err == io.EOF {
-				d.connectionClosed()
+				d.connectionLost()
 				return
 			}
 			logWarning("Read error: %v", err)
@@ -242,7 +317,7 @@ func (d *Device) read() {
 		numPayload, err := d.conn.Read(payload)
 		if err != nil {
 			if err == io.EOF {
-				d.connectionClosed()
+				d.connectionLost()
 				return
 			}
 			logWarning("Read error: %v", err)
