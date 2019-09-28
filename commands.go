@@ -18,12 +18,12 @@ type ISCPCommand string
 type ParamType string
 
 const (
-	paramOnOff        ParamType = "onOff"
-	paramOnOffToggle  ParamType = "onOffToggle"
-	paramEnum         ParamType = "enum"
-	paramEnumToggle   ParamType = "enumToggle"
-	paramIntRange     ParamType = "intRange"
-	paramIntRangeEnum ParamType = "intRangeEnum"
+	OnOff        ParamType = "onOff"
+	OnOffToggle  ParamType = "onOffToggle"
+	Enum         ParamType = "enum"
+	EnumToggle   ParamType = "enumToggle"
+	IntRange     ParamType = "intRange"
+	IntRangeEnum ParamType = "intRangeEnum"
 
 	queryParam = "QSTN"
 )
@@ -65,17 +65,17 @@ func (c *Command) CreateCommand(param interface{}) (ISCPCommand, error) {
 
 func (c *Command) formatParam(raw interface{}) (string, error) {
 	switch c.ParamType {
-	case paramOnOff:
+	case OnOff:
 		return formatOnOff(raw)
-	case paramOnOffToggle:
+	case OnOffToggle:
 		return formatOnOffToggle(raw)
-	case paramEnum:
+	case Enum:
 		return formatEnum(c.Lookup, raw)
-	case paramEnumToggle:
+	case EnumToggle:
 		return formatEnumToggle(c.Lookup, raw)
-	case paramIntRange:
+	case IntRange:
 		return formatIntRange(c.Lower, c.Upper, c.Scale, raw)
-	case paramIntRangeEnum:
+	case IntRangeEnum:
 		return formatIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
 
@@ -85,17 +85,17 @@ func (c *Command) formatParam(raw interface{}) (string, error) {
 // ParseParam converts the ISCP param value to the friendly version.
 func (c *Command) ParseParam(raw string) (string, error) {
 	switch c.ParamType {
-	case paramOnOff:
+	case OnOff:
 		return parseOnOff(raw)
-	case paramOnOffToggle:
+	case OnOffToggle:
 		return parseOnOffToggle(raw)
-	case paramEnum:
+	case Enum:
 		return parseEnum(c.Lookup, raw)
-	case paramEnumToggle:
+	case EnumToggle:
 		return parseEnumToggle(c.Lookup, raw)
-	case paramIntRange:
+	case IntRange:
 		return parseIntRange(c.Lower, c.Upper, c.Scale, raw)
-	case paramIntRangeEnum:
+	case IntRangeEnum:
 		return parseIntRangeEnum(c.Lower, c.Upper, c.Scale, c.Lookup, raw)
 	}
 	return "", fmt.Errorf("unsupported param type %q", c.ParamType)
