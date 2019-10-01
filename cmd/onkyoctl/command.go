@@ -102,9 +102,13 @@ func doStatus(device *onkyo.Device, names []string) error {
         }
     })
 
+    var err error
     for _, name := range(names) {
         wait.Add(1)
-        device.Query(name)
+        err = device.Query(name)
+        if err != nil {
+            return err
+        }
     }
 
     // wait until all responses are received or timeout

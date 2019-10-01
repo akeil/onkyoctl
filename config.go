@@ -6,7 +6,7 @@ import (
 
 const defaultPort = 60128
 
-// Config hold configuration settings.
+// Config holds configuration settings.
 type Config struct {
 	Host             string
 	Port             int
