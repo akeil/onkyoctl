@@ -36,38 +36,39 @@ func main() {
     var commands = do.Arg("commands", "Commands to send, pairs of <name> <value> - e.g. 'power on volume up'").Required().Strings()
 
     status := app.Command("status", "Show device status")
-    var names = status.Arg("names", "Status items to query, empty for default").Strings()
+    var names = status.Arg("names", "Status items to query, e.g. 'power volume'. Leave empty to query defaults").Strings()
 
     watch := app.Command("watch", "Watch device status")
     version := app.Command("version", "Print version")
 
-    onkyo.SetLogLevel(onkyo.Error)
+    subCommand := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-    var err error
-    var device onkyo.Device
-    switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-    case version.FullCommand():
+    if subCommand == version.FullCommand() {
         fmt.Println(onkyo.Version)
+        return
+    }
 
+    if *verbose {
+        onkyo.SetLogLevel(onkyo.Debug)
+    } else {
+        onkyo.SetLogLevel(onkyo.Error)
+    }
+
+    device := setup(*cfgPath, *host, *port)
+    err := device.Start()
+    defer device.Stop()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    switch subCommand {
     case do.FullCommand():
-        if *verbose {
-            onkyo.SetLogLevel(onkyo.Debug)
-        }
-        device = setup(*cfgPath, *host, *port)
         err = doCommands(device, *commands)
 
     case status.FullCommand():
-        if *verbose {
-            onkyo.SetLogLevel(onkyo.Debug)
-        }
-        device = setup(*cfgPath, *host, *port)
         err = doStatus(device, *names)
 
     case watch.FullCommand():
-        if *verbose {
-            onkyo.SetLogLevel(onkyo.Debug)
-        }
-        device = setup(*cfgPath, *host, *port)
         err = doWatch(device)
     }
 
@@ -77,12 +78,6 @@ func main() {
 }
 
 func doStatus(device onkyo.Device, names []string) error {
-    err := device.Start()
-    if err != nil {
-        return err
-    }
-    defer device.Stop()
-
     fmt.Printf("Status [%v]:\n", device.Host)
 
     if len(names) == 0 {
@@ -128,22 +123,7 @@ func doStatus(device onkyo.Device, names []string) error {
 	}
 }
 
-func contains(haystack []string, needle string) bool {
-    for _, item := range(haystack) {
-        if item == needle {
-            return true
-        }
-    }
-    return false
-}
-
 func doWatch(device onkyo.Device) error {
-    err := device.Start()
-    if err != nil {
-        return err
-    }
-    defer device.Stop()
-
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
     <-stop  // wait for SIGINT
@@ -156,16 +136,10 @@ func doCommands(device onkyo.Device, pairs []string) error {
         return errors.New("number of arguments must be even")
     }
 
-    err := device.Start()
-    if err != nil {
-        return err
-    }
-    defer device.Stop()
-
     for i := 0; i < len(pairs); i+=2 {
         name := pairs[i]
         value := pairs[i+1]
-        err = device.SendCommand(name, value)
+        err := device.SendCommand(name, value)
         if err != nil {
             return err
         }
@@ -209,4 +183,13 @@ func setup(cfgPath, host string, port int) onkyo.Device {
         fmt.Printf("%v = %v\n", name, value)
     })
     return device
+}
+
+func contains(haystack []string, needle string) bool {
+    for _, item := range(haystack) {
+        if item == needle {
+            return true
+        }
+    }
+    return false
 }
