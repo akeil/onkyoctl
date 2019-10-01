@@ -15,7 +15,7 @@ type Config struct {
 	AllowReconnect   bool
 	ReconnectSeconds int
 	Commands         CommandSet
-	Log				 Logger
+	Log              Logger
 }
 
 // DefaultConfig returns a Config struct with default values.

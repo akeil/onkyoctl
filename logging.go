@@ -34,10 +34,10 @@ type Logger interface {
 func NewLogger(level LogLevel) Logger {
 	flags := log.Ldate | log.Ltime | log.LUTC
 	l := &basicLogger{
-		debug   : log.New(ioutil.Discard, "D ", flags),
-		info    : log.New(ioutil.Discard, "I ", flags),
-		warning : log.New(ioutil.Discard, "W ", flags),
-		error   : log.New(ioutil.Discard, "E ", flags),
+		debug:   log.New(ioutil.Discard, "D ", flags),
+		info:    log.New(ioutil.Discard, "I ", flags),
+		warning: log.New(ioutil.Discard, "W ", flags),
+		error:   log.New(ioutil.Discard, "E ", flags),
 	}
 
 	if level <= Debug {
@@ -60,10 +60,10 @@ func NewLogger(level LogLevel) Logger {
 }
 
 type basicLogger struct {
-	debug *log.Logger
-	info *log.Logger
+	debug   *log.Logger
+	info    *log.Logger
 	warning *log.Logger
-	error *log.Logger
+	error   *log.Logger
 }
 
 func (l *basicLogger) Debug(msg string, v ...interface{}) {

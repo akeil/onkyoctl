@@ -18,7 +18,7 @@ type Callback func(name, value string)
 type Device struct {
 	Host           string
 	Port           int
-	log			   Logger
+	log            Logger
 	commands       CommandSet
 	callback       Callback
 	onConnect      func()
@@ -50,7 +50,7 @@ func NewDevice(cfg *Config) *Device {
 	return &Device{
 		Host:           cfg.Host,
 		Port:           cfg.Port,
-		log:		    log,
+		log:            log,
 		commands:       commands,
 		timeout:        cfg.ConnectTimeout,
 		wait:           &sync.WaitGroup{},
