@@ -36,10 +36,14 @@ type Device struct {
 
 // NewDevice sets up a new Onkyo device.
 func NewDevice(cfg *Config) *Device {
+	commands := cfg.Commands
+	if commands == nil {
+		commands = emptyCommands()
+	}
 	return &Device{
 		Host:           cfg.Host,
 		Port:           cfg.Port,
-		commands:       cfg.Commands,
+		commands:       commands,
 		timeout:        cfg.ConnectTimeout,
 		wait:           &sync.WaitGroup{},
 		send:           make(chan ISCPCommand, 16),
@@ -99,13 +103,9 @@ func (d *Device) Stop() {
 }
 
 // SendCommand sends an "friendly" command (e.g. "power off") to the device.
+//
+// This method calls `SendISCP()` behind the scenes.
 func (d *Device) SendCommand(name string, param interface{}) error {
-	logDebug("Dispatch command %v: %v", name, param)
-
-	if d.commands == nil {
-		return errors.New("command set ist not defined")
-	}
-
 	command, err := d.commands.CreateCommand(name, param)
 	if err != nil {
 		return err
@@ -115,11 +115,9 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 }
 
 // Query sends a QSTN command for the given friendly name.
+//
+// This method calls `SendISCP()` behind the scenes.
 func (d *Device) Query(name string) error {
-	if d.commands == nil {
-		return errors.New("command set ist not defined")
-	}
-
 	q, err := d.commands.CreateQuery(name)
 	if err != nil {
 		return err
@@ -128,6 +126,14 @@ func (d *Device) Query(name string) error {
 }
 
 // SendISCP sends a raw ISCP command to the device.
+//
+// You must `Start()` before you can send messages.
+// The device may lose its connection after start. With AutoConnect
+// set to true, attempts to connect and returns an error only if that fails.
+// Without autoconnect, an error is returned if the device is not connected.
+//
+// The message is send asynchronously. Use `WaitSend()` to block until the
+// message is actually transmitted.
 func (d *Device) SendISCP(command ISCPCommand) error {
 	if !d.isRunning {
 		return errors.New("device not started")
@@ -183,20 +189,14 @@ func (d *Device) doSend(command ISCPCommand) {
 
 	msg := NewEISCPMessage(command)
 	logDebug("Send (TCP): %v", msg)
-	numWritten, err := d.conn.Write(msg.Raw())
+	_, err := d.conn.Write(msg.Raw())
 	if err != nil {
 		logError("Error writing to connection: %v", err)
-	} else {
-		logDebug("Wrote %v bytes", numWritten)
 	}
 }
 
 func (d *Device) doReceive(command ISCPCommand) {
 	logDebug("Receive message: %v", command)
-	if d.commands == nil {
-		logWarning("Command set ist not defined, ignoring ISCP message.")
-		return
-	}
 
 	name, value, err := d.commands.ReadCommand(command)
 	if err != nil {
@@ -220,10 +220,12 @@ func (d *Device) connect() error {
 	if err != nil {
 		return err
 	}
-	// TODO: maybe handshake to check we are connected to an onkyo device?
+
 	logInfo("Connected.")
 	d.conn = conn
 	go d.read()
+
+	// TODO: maybe handshake to check we are connected to an onkyo device?
 
 	if d.onConnect != nil {
 		go d.onConnect()
@@ -426,4 +428,8 @@ func BasicCommands() CommandSet {
 		},
 	}
 	return NewBasicCommandSet(commands)
+}
+
+func emptyCommands() CommandSet {
+	return NewBasicCommandSet(make([]Command, 0))
 }
