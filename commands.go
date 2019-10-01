@@ -335,15 +335,15 @@ func parseToggle(raw string) (string, error) {
 type CommandSet interface {
 	// ReadCommand finds the command definition for an ISCP command
 	// and converts the parameter.
-	ReadCommand(ISCPCommand) (string, string, error)
+	ReadCommand(command ISCPCommand) (string, string, error)
 
 	// CreateCommand creates an ISCP command for the given friendly name
 	// and parameter.
 	// An error is returned if the name or parameter is invalid.
-	CreateCommand(string, interface{}) (ISCPCommand, error)
+	CreateCommand(name string, param interface{}) (ISCPCommand, error)
 
 	// CreateQuery creates a QSTN command for the given friendly name.
-	CreateQuery(string) (ISCPCommand, error)
+	CreateQuery(name string) (ISCPCommand, error)
 }
 
 type basicCommandSet struct {
