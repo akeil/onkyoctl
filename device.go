@@ -18,6 +18,7 @@ type Callback func(name, value string)
 type Device struct {
 	Host           string
 	Port           int
+	log			   Logger
 	commands       CommandSet
 	callback       Callback
 	onConnect      func()
@@ -40,9 +41,16 @@ func NewDevice(cfg *Config) *Device {
 	if commands == nil {
 		commands = emptyCommands()
 	}
+
+	log := cfg.Log
+	if log == nil {
+		log = NewLogger(NoLog)
+	}
+
 	return &Device{
 		Host:           cfg.Host,
 		Port:           cfg.Port,
+		log:		    log,
 		commands:       commands,
 		timeout:        cfg.ConnectTimeout,
 		wait:           &sync.WaitGroup{},
@@ -75,7 +83,7 @@ func (d *Device) Start() error {
 	if d.isRunning {
 		return errors.New("already started")
 	}
-	logInfo("Start device [%v:%v]", d.Host, d.Port)
+	d.log.Info("Start device [%v:%v]", d.Host, d.Port)
 
 	d.reco = time.NewTimer(d.reconnectTime)
 
@@ -92,7 +100,7 @@ func (d *Device) Start() error {
 
 // Stop disconnects from the device and stop message processing.
 func (d *Device) Stop() {
-	logInfo("Stop device [%v:%v]", d.Host, d.Port)
+	d.log.Info("Stop device [%v:%v]", d.Host, d.Port)
 	if !d.isRunning {
 		return
 	}
@@ -144,7 +152,7 @@ func (d *Device) SendISCP(command ISCPCommand) error {
 		return err
 	}
 
-	logDebug("Dispatch %v", command)
+	d.log.Debug("Dispatch %v", command)
 
 	d.wait.Add(1)
 	d.send <- command
@@ -188,29 +196,29 @@ func (d *Device) doSend(command ISCPCommand) {
 	defer d.wait.Done()
 
 	msg := NewEISCPMessage(command)
-	logDebug("Send (TCP): %v", msg)
+	d.log.Debug("Send (TCP): %v", msg)
 	_, err := d.conn.Write(msg.Raw())
 	if err != nil {
-		logError("Error writing to connection: %v", err)
+		d.log.Error("Error writing to connection: %v", err)
 	}
 }
 
 func (d *Device) doReceive(command ISCPCommand) {
-	logDebug("Receive message: %v", command)
+	d.log.Debug("Receive message: %v", command)
 
 	name, value, err := d.commands.ReadCommand(command)
 	if err != nil {
-		logWarning("Error reading %q: %v", command, err)
+		d.log.Warning("Error reading %q: %v", command, err)
 		return
 	}
-	logDebug("Received '%v %v'", name, value)
+	d.log.Debug("Received '%v %v'", name, value)
 	if d.callback != nil {
 		d.callback(name, value)
 	}
 }
 
 func (d *Device) connect() error {
-	logInfo("Connect to %v:%v ...", d.Host, d.Port)
+	d.log.Info("Connect to %v:%v ...", d.Host, d.Port)
 
 	d.reco.Stop()
 
@@ -221,7 +229,7 @@ func (d *Device) connect() error {
 		return err
 	}
 
-	logInfo("Connected.")
+	d.log.Info("Connected.")
 	d.conn = conn
 	go d.read()
 
@@ -253,10 +261,10 @@ func (d *Device) disconnect() {
 	if !d.isConnected() {
 		return
 	}
-	logDebug("Disconnect.")
+	d.log.Debug("Disconnect.")
 	err := d.conn.Close()
 	if err != nil {
-		logWarning("Error closing connection: %v", err)
+		d.log.Warning("Error closing connection: %v", err)
 	}
 	d.conn = nil
 
@@ -267,7 +275,7 @@ func (d *Device) disconnect() {
 
 func (d *Device) connectionLost() {
 	// host closes connection when another client connects
-	logError("Connection closed by remote device.")
+	d.log.Error("Connection closed by remote device.")
 	d.disconnect()
 	if d.allowReconnect {
 		d.reco.Reset(d.reconnectTime)
@@ -275,13 +283,13 @@ func (d *Device) connectionLost() {
 }
 
 func (d *Device) reconnect() {
-	logDebug("Reconnect...")
+	d.log.Debug("Reconnect...")
 	if d.isConnected() {
 		return
 	}
 	err := d.connect()
 	if err != nil {
-		logError("Reconnect failed: %v", err)
+		d.log.Error("Reconnect failed: %v", err)
 		// schedule the next attempt
 		if d.allowReconnect {
 			d.reco.Reset(d.reconnectTime)
@@ -304,13 +312,13 @@ func (d *Device) read() {
 				d.connectionLost()
 				return
 			}
-			logWarning("Read error: %v", err)
+			d.log.Warning("Read error: %v", err)
 			return
 		}
-		logDebug("Read header (%v): %v", numRead, buf)
+		d.log.Debug("Read header (%v): %v", numRead, buf)
 		_, payloadSize, err := ParseHeader(buf)
 		if err != nil {
-			logWarning("Discard bad message: %v", err)
+			d.log.Warning("Discard bad message: %v", err)
 			continue
 		}
 
@@ -322,14 +330,14 @@ func (d *Device) read() {
 				d.connectionLost()
 				return
 			}
-			logWarning("Read error: %v", err)
+			d.log.Warning("Read error: %v", err)
 			return
 		}
-		logDebug("Read payload (%v): %v", numPayload, payload)
+		d.log.Debug("Read payload (%v): %v", numPayload, payload)
 
 		iscp, err := ParseISCP(payload)
 		if err != nil {
-			logWarning("Discard invalid message: %v", err)
+			d.log.Warning("Discard invalid message: %v", err)
 			continue
 		}
 		d.recv <- iscp.Command()

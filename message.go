@@ -110,7 +110,6 @@ func (e *EISCPMessage) Raw() []byte {
 	header[15] = 0x00
 
 	result := append(header, payload...)
-	logDebug("Raw eISCP message: %v", result)
 	return result
 }
 
@@ -173,8 +172,6 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	s := string(data)
 	size := len(s)
 
-	logDebug("Parse ISCP: %v / %q", data, s)
-
 	// expect: !1<COMMAND>\r\n
 	// where Command is at least three digits
 	// we can do without CR/LF at the end
@@ -211,6 +208,5 @@ func ParseISCP(data []byte) (*ISCPMessage, error) {
 	}
 
 	command := string(s[2 : offset+1])
-	logDebug("Parsed ISCP command %q", command)
 	return NewISCPMessage(ISCPCommand(command)), nil
 }

@@ -11,10 +11,11 @@ type Config struct {
 	Host             string
 	Port             int
 	ConnectTimeout   int
-	Commands         CommandSet
 	AutoConnect      bool
 	AllowReconnect   bool
 	ReconnectSeconds int
+	Commands         CommandSet
+	Log				 Logger
 }
 
 // DefaultConfig returns a Config struct with default values.

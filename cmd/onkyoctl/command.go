@@ -48,13 +48,12 @@ func main() {
         return
     }
 
+    logLevel := onkyo.Error
     if *verbose {
-        onkyo.SetLogLevel(onkyo.Debug)
-    } else {
-        onkyo.SetLogLevel(onkyo.Error)
+        logLevel = onkyo.Debug
     }
 
-    device := setup(*cfgPath, *host, *port)
+    device := setup(logLevel, *cfgPath, *host, *port)
     err := device.Start()
     defer device.Stop()
     if err != nil {
@@ -152,7 +151,7 @@ func doCommands(device *onkyo.Device, pairs []string) error {
     return nil
 }
 
-func setup(cfgPath, host string, port int) *onkyo.Device {
+func setup(logLevel onkyo.LogLevel, cfgPath, host string, port int) *onkyo.Device {
     var err error
     cfg := onkyo.DefaultConfig()
 
@@ -170,6 +169,8 @@ func setup(cfgPath, host string, port int) *onkyo.Device {
             cfg = onkyo.DefaultConfig()
         }
     }
+
+    cfg.Log = onkyo.NewLogger(logLevel)
 
     // override some config settings from command line
     if host != "" {

@@ -167,7 +167,7 @@ func TestEISCPParse(t *testing.T) {
 	})
 	assertErr(t, err)
 
-	// valid message
+	// valid message, w/o EOF
 	eiscp, err = ParseEISCP([]byte{
 		0x49, 0x53, 0x43, 0x50, // ISCP
 		0x00, 0x00, 0x00, 0x10, // 16
@@ -178,7 +178,7 @@ func TestEISCPParse(t *testing.T) {
 	assertNoErr(t, err)
 	assertEqual(t, eiscp.Command(), ISCPCommand("XXX"))
 
-	// valid message, w/ endmarker
+	// valid message, w/ EOF
 	eiscp, err = ParseEISCP([]byte{
 		0x49, 0x53, 0x43, 0x50, // ISCP
 		0x00, 0x00, 0x00, 0x10, // 16
