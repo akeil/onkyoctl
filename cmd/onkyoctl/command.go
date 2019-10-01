@@ -77,7 +77,7 @@ func main() {
     }
 }
 
-func doStatus(device onkyo.Device, names []string) error {
+func doStatus(device *onkyo.Device, names []string) error {
     fmt.Printf("Status [%v]:\n", device.Host)
 
     if len(names) == 0 {
@@ -96,7 +96,6 @@ func doStatus(device onkyo.Device, names []string) error {
 
     device.OnMessage(func(name, value string) {
         fmt.Printf("%v: %v\n", name, value)
-
         // note: not *quite* correct - we accept duplicate responses
         if contains(names, name) {
             wait.Done()
@@ -123,7 +122,7 @@ func doStatus(device onkyo.Device, names []string) error {
 	}
 }
 
-func doWatch(device onkyo.Device) error {
+func doWatch(device *onkyo.Device) error {
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
     <-stop  // wait for SIGINT
@@ -131,7 +130,7 @@ func doWatch(device onkyo.Device) error {
     return nil
 }
 
-func doCommands(device onkyo.Device, pairs []string) error {
+func doCommands(device *onkyo.Device, pairs []string) error {
     if len(pairs) % 2 != 0 {
         return errors.New("number of arguments must be even")
     }
@@ -149,7 +148,7 @@ func doCommands(device onkyo.Device, pairs []string) error {
     return nil
 }
 
-func setup(cfgPath, host string, port int) onkyo.Device {
+func setup(cfgPath, host string, port int) *onkyo.Device {
     var err error
     cfg := onkyo.DefaultConfig()
 

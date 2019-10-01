@@ -35,8 +35,8 @@ type Device struct {
 }
 
 // NewDevice sets up a new Onkyo device.
-func NewDevice(cfg *Config) Device {
-	return Device{
+func NewDevice(cfg *Config) *Device {
+	return &Device{
 		Host:           cfg.Host,
 		Port:           cfg.Port,
 		commands:       cfg.Commands,
