@@ -17,7 +17,7 @@ const (
 )
 
 // ISCPMessage is the base message for ISCP.
-// The messages conststs of:
+// The messages consists of:
 // !    - start character
 // 1    - receiver type
 // ...  - <command>
@@ -33,12 +33,13 @@ func NewISCPMessage(command ISCPCommand) *ISCPMessage {
 	}
 }
 
-// Format returns this message as a string, including terminating newline.
+// Format returns the string representation for an ISCPMessage.
+// Includes terminating newline (CRLF).
 func (i *ISCPMessage) Format() string {
 	return iscpStart + unitTypeReceiver + string(i.command) + terminator
 }
 
-// Command returns the ISCP command for this message.
+// Command returns the ISCP command for a message.
 func (i *ISCPMessage) Command() ISCPCommand {
 	return i.command
 }

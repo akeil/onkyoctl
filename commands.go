@@ -18,11 +18,17 @@ type ISCPCommand string
 type ParamType string
 
 const (
+	// OnOff commands accept only on/off as parameter.
 	OnOff        ParamType = "onOff"
+	// OnOffToggle commands work like on/off but accept an additional "toggle".
 	OnOffToggle  ParamType = "onOffToggle"
+	// Enum based commands expect parameters from a list of values.
 	Enum         ParamType = "enum"
+	// EnumToggle works like Enum but accepts an additional toggle/cycle parameter.
 	EnumToggle   ParamType = "enumToggle"
+	// IntRange accepts an integer value with min and max values.
 	IntRange     ParamType = "intRange"
+	// IntRangeEnum accepts integers and additional values from a list.
 	IntRangeEnum ParamType = "intRangeEnum"
 
 	queryParam = "QSTN"
@@ -330,7 +336,7 @@ func parseToggle(raw string) (string, error) {
 	return "", fmt.Errorf("invalid parameter %q", raw)
 }
 
-// A CommandSet represnts a set of known/supported commands
+// A CommandSet represents a set of known/supported commands
 // and can be used to convert the "friendly" version to ISCP and vice-versa.
 type CommandSet interface {
 	// ReadCommand finds the command definition for an ISCP command
