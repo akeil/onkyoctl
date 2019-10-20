@@ -8,7 +8,7 @@ build:
 	go build -o $(BINDIR)/$(PROJECT_NAME) $(MAIN)
 
 test:
-	go test -o $(BINDIR)/$(PROJECT_NAME).test ./$(PROJECT_NAME)
+	go test
 
 deps:
 	go get gopkg.in/alecthomas/kingpin.v2

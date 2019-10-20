@@ -14,7 +14,7 @@ const protocol = "tcp"
 // Callback is the type for message callback functions.
 type Callback func(name, value string)
 
-// Device is an Onkyo device
+// Device is an Onkyo device.
 type Device struct {
 	Host           string
 	Port           int
