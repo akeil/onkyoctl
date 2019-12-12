@@ -14,7 +14,7 @@ var testPort = 30128
 func TestDeviceBasics(t *testing.T) {
 	device := NewDevice(testConfig())
 
-	err := device.SendISCP(validCommand)
+	err := device.SendISCP(validCommand, 0)
 	if err == nil {
 		t.Log("Missing expected error when using non-started device")
 		t.Fail()
@@ -41,7 +41,7 @@ func xTestDeviceConnectAndSend(t *testing.T) {
 		t.Fail()
 	}
 
-	device.SendISCP(validCommand)
+	device.SendISCP(validCommand, 0)
 
 	data, err := server.ReadRaw()
 	if err != nil {
@@ -106,7 +106,7 @@ func xTestDeviceAutoConnect(t *testing.T) {
 	// we should see a new incoming connection server side and the command.
 	//
 	// TODO: does not work - device reconnects, but we do not see it
-	err = device.SendISCP(validCommand)
+	err = device.SendISCP(validCommand, 0)
 	if err != nil {
 		t.Logf("unexpected send error: %v", err)
 		t.Fail()

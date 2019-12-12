@@ -147,7 +147,6 @@ func doCommands(device *onkyo.Device, pairs []string) error {
         }
     }
 
-    device.WaitSend(1 * time.Second)
     return nil
 }
 

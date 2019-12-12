@@ -95,7 +95,7 @@ func (d *Device) SendCommand(name string, param interface{}) error {
 		return err
 	}
 
-	return d.SendISCP(command)
+	return d.SendISCP(command, 0)
 }
 
 // Query sends a QSTN command for the given friendly name.
@@ -106,7 +106,7 @@ func (d *Device) Query(name string) error {
 	if err != nil {
 		return err
 	}
-	return d.SendISCP(q)
+	return d.SendISCP(q, 0)
 }
 
 // SendISCP sends a raw ISCP command to the device.
@@ -116,16 +116,17 @@ func (d *Device) Query(name string) error {
 // set to true, attempts to connect and returns an error only if that fails.
 // Without autoconnect, an error is returned if the device is not connected.
 //
-// The message is send asynchronously. Use `WaitSend()` to block until the
-// message is actually transmitted.
-func (d *Device) SendISCP(cmd ISCPCommand) error {
+// The message is send asynchronously. Use a non-zero timeout to wait until
+// the message is sent.
+// Note that the message may still be sent even if `ErrTimeout` is returned.
+func (d *Device) SendISCP(cmd ISCPCommand, timeout time.Duration) error {
 	if d.autoConnect {
 		// if already connected, this does nothing
 		d.client.Connect()
 	}
 	// TODO: await connected
 
-	return d.client.Send(cmd)
+	return d.client.Send(cmd, timeout)
 }
 
 func (d *Device) connectionChanged(s ConnectionState) {
