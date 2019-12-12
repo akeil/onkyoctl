@@ -54,12 +54,10 @@ func main() {
     }
 
     device := setup(logLevel, *cfgPath, *host, *port)
-    err := device.Start()
+    device.Start()
     defer device.Stop()
-    if err != nil {
-        log.Fatal(err)
-    }
 
+    var err error
     switch subCommand {
     case do.FullCommand():
         err = doCommands(device, *commands)

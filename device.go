@@ -19,7 +19,6 @@ type Device struct {
 	callback       Callback
 	onConnect      func()
 	onDisconnect   func()
-	timeout        int
 	wait           *sync.WaitGroup
 	autoConnect    bool
 	allowReconnect bool
@@ -44,7 +43,6 @@ func NewDevice(cfg *Config) *Device {
 		Port:           cfg.Port,
 		log:            log,
 		commands:       commands,
-		timeout:        cfg.ConnectTimeout,
 		wait:           &sync.WaitGroup{},
 		autoConnect:    cfg.AutoConnect,
 		allowReconnect: cfg.AllowReconnect,
@@ -74,10 +72,9 @@ func (d *Device) OnConnected(callback func()) {
 }
 
 // Start connects to the device and starts receiving messages.
-func (d *Device) Start() error {
+func (d *Device) Start() {
 	d.client.Start()
 	d.client.Connect()
-	return nil
 }
 
 // Stop disconnects from the device and stop message processing.
@@ -124,7 +121,7 @@ func (d *Device) SendISCP(cmd ISCPCommand, timeout time.Duration) error {
 		// if already connected, this does nothing
 		d.client.Connect()
 	}
-	// TODO: await connected
+	d.client.WaitConnect(timeout)
 
 	return d.client.Send(cmd, timeout)
 }

@@ -85,6 +85,26 @@ func (c *client) Disconnect() {
 	c.wantDisconnect <- true
 }
 
+func (c *client) WaitConnect(timeout time.Duration) bool {
+    if c.isState(Connected) {
+        return true
+    }
+
+    t := time.After(timeout)
+    ticker := time.NewTimer(50 * time.Millisecond)
+    defer ticker.Stop()
+    for {
+        select {
+        case <-t:
+            return c.isState(Connected)
+        case <-ticker.C:
+            if c.isState(Connected) {
+                return true
+            }
+        }
+    }
+}
+
 func (c *client) State() ConnectionState {
 	c.connLock.Lock()
 	defer c.connLock.Unlock()
@@ -177,7 +197,6 @@ func (c *client) doConnect() {
 		return
 	}
 
-	// we are connected
 	c.changeState(Connected, conn)
 	go c.readLoop(c.conn) // TODO: not thread safe
 }

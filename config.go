@@ -10,7 +10,6 @@ const defaultPort = 60128
 type Config struct {
 	Host             string
 	Port             int
-	ConnectTimeout   int
 	AutoConnect      bool
 	AllowReconnect   bool
 	ReconnectSeconds int
@@ -22,7 +21,6 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Port:             defaultPort,
-		ConnectTimeout:   10,
 		AutoConnect:      false,
 		AllowReconnect:   false,
 		ReconnectSeconds: 5,

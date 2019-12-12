@@ -28,12 +28,7 @@ func xTestDeviceConnectAndSend(t *testing.T) {
 	server.Start()
 	defer server.Stop()
 
-	err := device.Start()
-	if err != nil {
-		t.Logf("Start error: %v", err)
-		t.Fail()
-		return
-	}
+	device.Start()
 	defer device.Stop()
 
 	if !server.WaitConnected() {
@@ -72,11 +67,7 @@ func xTestDeviceAutoConnect(t *testing.T) {
 	server.Start()
 	defer server.Stop()
 
-	err := device.Start()
-	if err != nil {
-		t.Fail()
-		return
-	}
+	device.Start()
 	defer device.Stop()
 
 	if !server.WaitConnected() {
@@ -106,7 +97,7 @@ func xTestDeviceAutoConnect(t *testing.T) {
 	// we should see a new incoming connection server side and the command.
 	//
 	// TODO: does not work - device reconnects, but we do not see it
-	err = device.SendISCP(validCommand, 0)
+	err := device.SendISCP(validCommand, 0)
 	if err != nil {
 		t.Logf("unexpected send error: %v", err)
 		t.Fail()
