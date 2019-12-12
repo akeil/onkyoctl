@@ -7,6 +7,7 @@ import (
     "time"
     "io"
     "bufio"
+    "sync"
 )
 
 type ConnectionState int
@@ -28,9 +29,9 @@ type client struct {
     host string
     port int
     timeout time.Duration
-
     state ConnectionState
     conn net.Conn
+    connLock sync.Mutex
     done chan bool
     wantConnect chan bool
     wantDisconnect chan bool
@@ -77,7 +78,8 @@ func (c *client) Disconnect() {
 }
 
 func (c *client) State() ConnectionState {
-    // Lock?
+    c.connLock.Lock()
+    defer c.connLock.Unlock()
     return c.state
 }
 
@@ -116,7 +118,9 @@ func (c *client) doDone() {
 // Connection handling --------------------------------------------------------
 
 func (c *client) isState(states...ConnectionState) bool {
-    // Lock
+    c.connLock.Lock()
+    defer c.connLock.Unlock()
+
     for _, s := range(states) {
         if s == c.state {
             return true
@@ -126,7 +130,9 @@ func (c *client) isState(states...ConnectionState) bool {
 }
 
 func (c *client) changeState(s ConnectionState, conn net.Conn) {
-    // Lock
+    c.connLock.Lock()
+    defer c.connLock.Unlock()
+
     c.state = s
     if conn != nil {
         c.conn = conn
