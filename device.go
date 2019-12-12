@@ -160,12 +160,12 @@ func (d *Device) handleReceived(cmd ISCPCommand) {
 // BasicCommands creates a command set with some commonly used commands.
 func BasicCommands() CommandSet {
 	commands := []Command{
-		Command{
+		{
 			Name:      "power",
 			Group:     "PWR",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "volume",
 			Group:     "MVL",
 			ParamType: "intRangeEnum",
@@ -177,22 +177,22 @@ func BasicCommands() CommandSet {
 				"DOWN": "down",
 			},
 		},
-		Command{
+		{
 			Name:      "mute",
 			Group:     "AMT",
 			ParamType: "onOffToggle",
 		},
-		Command{
+		{
 			Name:      "speaker-a",
 			Group:     "SPA",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "speaker-b",
 			Group:     "SPB",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "dimmer",
 			Group:     "DIM",
 			ParamType: "enum",
@@ -204,7 +204,7 @@ func BasicCommands() CommandSet {
 				"08": "led-off",
 			},
 		},
-		Command{
+		{
 			Name:      "display",
 			Group:     "DIF",
 			ParamType: "enumToggle",
@@ -215,7 +215,7 @@ func BasicCommands() CommandSet {
 				"03": "mode-4",
 			},
 		},
-		Command{
+		{
 			Name:      "input",
 			Group:     "SLI",
 			ParamType: "enum",
@@ -227,7 +227,7 @@ func BasicCommands() CommandSet {
 				"20": "tv",
 			},
 		},
-		Command{
+		{
 			Name:      "listen-mode",
 			Group:     "LMD",
 			ParamType: "enum",
@@ -238,7 +238,7 @@ func BasicCommands() CommandSet {
 				"11":     "pure",
 			},
 		},
-		Command{
+		{
 			Name:      "update",
 			Group:     "UPD",
 			ParamType: "enum",

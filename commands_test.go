@@ -35,73 +35,73 @@ func TestFormatOnOff(t *testing.T) {
 	}
 	cases := []TestCase{
 		// booleans
-		TestCase{
+		{
 			Param: true, ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: false, ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
 		// numeric
-		TestCase{
+		{
 			Param: 1, ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: 0, ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: 1.0, ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: 0.0, ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: 2, ExpectError: true,
 		},
-		TestCase{
+		{
 			Param: 0.5, ExpectError: true,
 		},
 		// strings
-		TestCase{
+		{
 			Param: "on", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "ON", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "true", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "TRUE", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "1", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "01", ExpectError: false, Expected: ISCPCommand("PWR01"),
 		},
-		TestCase{
+		{
 			Param: "off", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: "OFF", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: "false", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: "FALSE", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: "0", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
-		TestCase{
+		{
 			Param: "00", ExpectError: false, Expected: ISCPCommand("PWR00"),
 		},
 		// invalid strings
-		TestCase{
+		{
 			Param: "foo", ExpectError: true,
 		},
-		TestCase{
+		{
 			Param: "X", ExpectError: true,
 		},
 	}
@@ -153,10 +153,10 @@ func TestParseOnOff(t *testing.T) {
 		Expected    string
 	}
 	cases := []TestCase{
-		TestCase{Raw: "01", ExpectError: false, Expected: "on"},
-		TestCase{Raw: "00", ExpectError: false, Expected: "off"},
-		TestCase{Raw: "xx", ExpectError: true},
-		TestCase{Raw: "", ExpectError: true},
+		{Raw: "01", ExpectError: false, Expected: "on"},
+		{Raw: "00", ExpectError: false, Expected: "off"},
+		{Raw: "xx", ExpectError: true},
+		{Raw: "", ExpectError: true},
 	}
 
 	var actual string
@@ -389,12 +389,12 @@ func TestParseIntRange(t *testing.T) {
 
 func TestBasicCreate(t *testing.T) {
 	commands := []Command{
-		Command{
+		{
 			Name:      "power",
 			Group:     "PWR",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "mute",
 			Group:     "AMT",
 			ParamType: "onOffToggle",
@@ -410,32 +410,32 @@ func TestBasicCreate(t *testing.T) {
 	}
 
 	cases := []TestCase{
-		TestCase{
+		{
 			Name:        "power",
 			Param:       "on",
 			Expected:    ISCPCommand("PWR01"),
 			ExpectError: false,
 		},
-		TestCase{
+		{
 			Name:        "power",
 			Param:       "Off",
 			Expected:    ISCPCommand("PWR00"),
 			ExpectError: false,
 		},
-		TestCase{
+		{
 			Name:        "mute",
 			Param:       "toggle",
 			Expected:    ISCPCommand("AMTTG"),
 			ExpectError: false,
 		},
 		// unsupported param
-		TestCase{
+		{
 			Name:        "power",
 			Param:       "toggle",
 			ExpectError: true,
 		},
 		// unsupported command name
-		TestCase{
+		{
 			Name:        "unknown",
 			Param:       "on",
 			ExpectError: true,
@@ -454,12 +454,12 @@ func TestBasicCreate(t *testing.T) {
 
 func TestBasicRead(t *testing.T) {
 	commands := []Command{
-		Command{
+		{
 			Name:      "power",
 			Group:     "PWR",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "mute",
 			Group:     "AMT",
 			ParamType: "onOffToggle",
@@ -474,14 +474,14 @@ func TestBasicRead(t *testing.T) {
 		Value       string
 	}
 	cases := []TestCase{
-		TestCase{ISCP: "PWR01", ExpectError: false, Name: "power", Value: "on"},
-		TestCase{ISCP: "PWR00", ExpectError: false, Name: "power", Value: "off"},
-		TestCase{ISCP: "PWRxx", ExpectError: true},
-		TestCase{ISCP: "PWR", ExpectError: true},
+		{ISCP: "PWR01", ExpectError: false, Name: "power", Value: "on"},
+		{ISCP: "PWR00", ExpectError: false, Name: "power", Value: "off"},
+		{ISCP: "PWRxx", ExpectError: true},
+		{ISCP: "PWR", ExpectError: true},
 
-		TestCase{ISCP: "AMTTG", ExpectError: false, Name: "mute", Value: "toggle"},
+		{ISCP: "AMTTG", ExpectError: false, Name: "mute", Value: "toggle"},
 
-		TestCase{ISCP: "FOO", ExpectError: true},
+		{ISCP: "FOO", ExpectError: true},
 	}
 
 	for _, tc := range cases {
@@ -498,12 +498,12 @@ func TestBasicRead(t *testing.T) {
 
 func TestBasicQuery(t *testing.T) {
 	commands := []Command{
-		Command{
+		{
 			Name:      "power",
 			Group:     "PWR",
 			ParamType: "onOff",
 		},
-		Command{
+		{
 			Name:      "mute",
 			Group:     "AMT",
 			ParamType: "onOffToggle",

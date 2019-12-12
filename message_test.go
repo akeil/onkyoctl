@@ -22,40 +22,40 @@ func TestISCPParse(t *testing.T) {
 	}
 	cases := []Case{
 		// messages too short
-		Case{
+		{
 			Data:        make([]byte, 2),
 			ExpectError: true,
 		},
-		Case{
+		{
 			Data:        make([]byte, 9),
 			ExpectError: true,
 		},
-		Case{
+		{
 			Data:        []byte("1PWR01\n"),
 			ExpectError: true,
 		},
-		Case{
+		{
 			Data:        []byte("!PWR01\n"),
 			ExpectError: true,
 		},
 		// various end styles
-		Case{
+		{
 			Data:        []byte("!1PWR01\r\n"),
 			ExpectError: false,
 			Command:     "PWR01",
 		},
-		Case{
+		{
 			Data:        []byte("!1PWR01\r"),
 			ExpectError: false,
 			Command:     "PWR01",
 		},
-		Case{
+		{
 			Data:        []byte("!1PWR01\n"),
 			ExpectError: false,
 			Command:     "PWR01",
 		},
 		// no end marker (invalid according to spec, but we accept it)
-		Case{
+		{
 			Data:        []byte("!1PWR01"),
 			ExpectError: false,
 			Command:     "PWR01",
