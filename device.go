@@ -1,9 +1,6 @@
 package onkyoctl
 
 import (
-	"errors"
-	"fmt"
-	"io"
 	"net"
 	"sync"
 	"time"
@@ -33,6 +30,7 @@ type Device struct {
 	allowReconnect bool
 	reconnectTime  time.Duration
 	isRunning      bool
+	client         *client
 }
 
 // NewDevice sets up a new Onkyo device.
@@ -47,7 +45,7 @@ func NewDevice(cfg *Config) *Device {
 		log = NewLogger(NoLog)
 	}
 
-	return &Device{
+	d := &Device{
 		Host:           cfg.Host,
 		Port:           cfg.Port,
 		log:            log,
@@ -59,7 +57,12 @@ func NewDevice(cfg *Config) *Device {
 		autoConnect:    cfg.AutoConnect,
 		allowReconnect: cfg.AllowReconnect,
 		reconnectTime:  time.Duration(cfg.ReconnectSeconds) * time.Second,
+		client: newClient(cfg.Host, cfg.Port, log),
 	}
+
+	d.client.handler = d.handleReceived
+	d.client.connectionCB = d.connectionChanged
+	return d
 }
 
 // OnMessage sets the handler for received messages to the given function.
@@ -80,34 +83,15 @@ func (d *Device) OnConnected(callback func()) {
 
 // Start connects to the device and starts receiving messages.
 func (d *Device) Start() error {
-	if d.isRunning {
-		return errors.New("already started")
-	}
-	d.log.Info("Start device [%v:%v]", d.Host, d.Port)
-
-	d.reco = time.NewTimer(d.reconnectTime)
-
-	err := d.connect()
-	if err != nil {
-		return err
-	}
-
-	d.isRunning = true
-	go d.loop()
-
+	d.client.Start()
+	d.client.Connect()
 	return nil
 }
 
 // Stop disconnects from the device and stop message processing.
 func (d *Device) Stop() {
 	d.log.Info("Stop device [%v:%v]", d.Host, d.Port)
-	if !d.isRunning {
-		return
-	}
-
-	d.disconnect()
-	close(d.recv)
-	close(d.send)
+	d.client.Stop()
 }
 
 // SendCommand sends an "friendly" command (e.g. "power off") to the device.
@@ -142,21 +126,14 @@ func (d *Device) Query(name string) error {
 //
 // The message is send asynchronously. Use `WaitSend()` to block until the
 // message is actually transmitted.
-func (d *Device) SendISCP(command ISCPCommand) error {
-	if !d.isRunning {
-		return errors.New("device not started")
+func (d *Device) SendISCP(cmd ISCPCommand) error {
+	if d.autoConnect {
+		// if already connected, this does nothing
+		d.client.Connect()
 	}
+	// TODO: await connected
 
-	err := d.connectIfRequired()
-	if err != nil {
-		return err
-	}
-
-	d.log.Debug("Dispatch %v", command)
-
-	d.wait.Add(1)
-	d.send <- command
-	return nil
+	return d.client.Send(cmd)
 }
 
 // WaitSend waits for all submitted messages to be sent.
@@ -175,172 +152,34 @@ func (d *Device) WaitSend(timeout time.Duration) {
 	}
 }
 
-func (d *Device) loop() {
-	for {
-		select {
-		case <-d.reco.C:
-			d.reconnect()
-		case command, more := <-d.recv:
-			if more {
-				d.doReceive(command)
-			}
-		case command, more := <-d.send:
-			if more {
-				d.doSend(command)
-			}
+func (d *Device) connectionChanged(s ConnectionState) {
+	d.log.Debug("Connection state changed to %q", s)
+	if s == Connected && d.onConnect != nil {
+		d.onConnect()
+	}
+
+	if s == Disconnected && d.onDisconnect != nil {
+		d.onDisconnect()
+		if d.allowReconnect {
+			//TODO: not when we Stop()'ed
+			d.log.Debug("Schedule reconnect")
+		    go func() {
+		        time.Sleep(d.reconnectTime)
+		        d.client.Connect()
+		    }()
 		}
 	}
 }
 
-func (d *Device) doSend(command ISCPCommand) {
-	defer d.wait.Done()
-
-	msg := NewEISCPMessage(command)
-	d.log.Debug("Send (TCP): %v", msg)
-	_, err := d.conn.Write(msg.Raw())
+func (d *Device) handleReceived(cmd ISCPCommand) {
+	name, value, err := d.commands.ReadCommand(cmd)
 	if err != nil {
-		d.log.Error("Error writing to connection: %v", err)
-	}
-}
-
-func (d *Device) doReceive(command ISCPCommand) {
-	d.log.Debug("Receive message: %v", command)
-
-	name, value, err := d.commands.ReadCommand(command)
-	if err != nil {
-		d.log.Warning("Error reading %q: %v", command, err)
+		d.log.Warning("Error reading %q: %v", cmd, err)
 		return
 	}
 	d.log.Debug("Received '%v %v'", name, value)
 	if d.callback != nil {
 		d.callback(name, value)
-	}
-}
-
-func (d *Device) connect() error {
-	d.log.Info("Connect to %v:%v ...", d.Host, d.Port)
-
-	d.reco.Stop()
-
-	addr := fmt.Sprintf("%v:%v", d.Host, d.Port)
-	timeout := time.Duration(d.timeout) * time.Second
-	conn, err := net.DialTimeout(protocol, addr, timeout)
-	if err != nil {
-		return err
-	}
-
-	d.log.Info("Connected.")
-	d.conn = conn
-	go d.read()
-
-	// TODO: maybe handshake to check we are connected to an onkyo device?
-
-	if d.onConnect != nil {
-		go d.onConnect()
-	}
-	return nil
-}
-
-func (d *Device) isConnected() bool {
-	return d.conn != nil
-}
-
-func (d *Device) connectIfRequired() error {
-	if d.isConnected() {
-		return nil
-	}
-
-	if d.autoConnect {
-		return d.connect()
-	}
-
-	return errors.New("device not connected")
-}
-
-func (d *Device) disconnect() {
-	if !d.isConnected() {
-		return
-	}
-	d.log.Debug("Disconnect.")
-	err := d.conn.Close()
-	if err != nil {
-		d.log.Warning("Error closing connection: %v", err)
-	}
-	d.conn = nil
-
-	if d.onDisconnect != nil {
-		go d.onDisconnect()
-	}
-}
-
-func (d *Device) connectionLost() {
-	// host closes connection when another client connects
-	d.log.Error("Connection closed by remote device.")
-	d.disconnect()
-	if d.allowReconnect {
-		d.reco.Reset(d.reconnectTime)
-	}
-}
-
-func (d *Device) reconnect() {
-	d.log.Debug("Reconnect...")
-	if d.isConnected() {
-		return
-	}
-	err := d.connect()
-	if err != nil {
-		d.log.Error("Reconnect failed: %v", err)
-		// schedule the next attempt
-		if d.allowReconnect {
-			d.reco.Reset(d.reconnectTime)
-		}
-	}
-}
-
-func (d *Device) read() {
-	for {
-		// TODO: not thread-safe
-		if !d.isConnected() {
-			return
-		}
-
-		// read message header
-		buf := make([]byte, headerSize)
-		numRead, err := d.conn.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				d.connectionLost()
-				return
-			}
-			d.log.Warning("Read error: %v", err)
-			return
-		}
-		d.log.Debug("Read header (%v): %v", numRead, buf)
-		_, payloadSize, err := ParseHeader(buf)
-		if err != nil {
-			d.log.Warning("Discard bad message: %v", err)
-			continue
-		}
-
-		// read message payload
-		payload := make([]byte, payloadSize)
-		numPayload, err := d.conn.Read(payload)
-		if err != nil {
-			if err == io.EOF {
-				d.connectionLost()
-				return
-			}
-			d.log.Warning("Read error: %v", err)
-			return
-		}
-		d.log.Debug("Read payload (%v): %v", numPayload, payload)
-
-		iscp, err := ParseISCP(payload)
-		if err != nil {
-			d.log.Warning("Discard invalid message: %v", err)
-			continue
-		}
-		d.recv <- iscp.Command()
 	}
 }
 
