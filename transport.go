@@ -22,15 +22,15 @@ const (
 
 var (
 	ErrNotConnected = errors.New("not connected")
-    ErrTimeout      = errors.New("timeout")
+	ErrTimeout      = errors.New("timeout")
 )
 
 // MessageHandler is a callback function to handle incoming messages.
 type MessageHandler func(ISCPCommand)
 
 type sendTask struct {
-    Command ISCPCommand
-    Reply   chan error
+	Command ISCPCommand
+	Reply   chan error
 }
 
 type client struct {
@@ -86,23 +86,23 @@ func (c *client) Disconnect() {
 }
 
 func (c *client) WaitConnect(timeout time.Duration) bool {
-    if c.isState(Connected) {
-        return true
-    }
+	if c.isState(Connected) {
+		return true
+	}
 
-    t := time.After(timeout)
-    ticker := time.NewTimer(50 * time.Millisecond)
-    defer ticker.Stop()
-    for {
-        select {
-        case <-t:
-            return c.isState(Connected)
-        case <-ticker.C:
-            if c.isState(Connected) {
-                return true
-            }
-        }
-    }
+	t := time.After(timeout)
+	ticker := time.NewTimer(50 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-t:
+			return c.isState(Connected)
+		case <-ticker.C:
+			if c.isState(Connected) {
+				return true
+			}
+		}
+	}
 }
 
 func (c *client) State() ConnectionState {
@@ -115,19 +115,19 @@ func (c *client) Send(cmd ISCPCommand, timeout time.Duration) error {
 	if c.isState(Disconnected, Disconnecting) {
 		return ErrNotConnected
 	}
-    reply := make(chan error, 1)
+	reply := make(chan error, 1)
 	c.send <- sendTask{Command: cmd, Reply: reply}
 
-    if timeout <= 0 {
-        return nil
-    }
+	if timeout <= 0 {
+		return nil
+	}
 
-    select{
-    case err := <-reply:
-        return err
-    case <-time.After(timeout):
-        return ErrTimeout
-    }
+	select {
+	case err := <-reply:
+		return err
+	case <-time.After(timeout):
+		return ErrTimeout
+	}
 }
 
 func (c *client) loop() {
@@ -281,7 +281,7 @@ func (c *client) readLoop(conn net.Conn) {
 func (c *client) doSend(t sendTask) {
 	if !c.isState(Connected) {
 		c.log.Warning("Discard message (not connected): %v", t.Command)
-        t.Reply <- ErrNotConnected
+		t.Reply <- ErrNotConnected
 		return
 	}
 	conn := c.conn // TODO: not thread safe
@@ -292,7 +292,7 @@ func (c *client) doSend(t sendTask) {
 	if err != nil {
 		c.log.Error("Error writing to connection: %v", err)
 	}
-    t.Reply <- err
+	t.Reply <- err
 }
 
 func (c *client) doReceive(cmd ISCPCommand) {
