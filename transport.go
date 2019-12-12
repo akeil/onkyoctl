@@ -221,14 +221,6 @@ func (c *client) doDisconnect() {
 	c.changeState(Disconnected, nil)
 }
 
-func (c *client) xreconnect() {
-	c.log.Debug("Schedule reconnect")
-	go func() {
-		time.Sleep(5 + time.Second)
-		c.Connect()
-	}()
-}
-
 func (c *client) readLoop(conn net.Conn) {
 	defer func() {
 		if c.isState(Connected) {

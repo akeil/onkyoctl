@@ -224,7 +224,7 @@ func BasicCommands() CommandSet {
 				"01": "cbl-sat",
 				"02": "game",
 				"03": "aux1",
-				"20": "tv-tape",
+				"20": "tv",
 			},
 		},
 		Command{
