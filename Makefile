@@ -1,11 +1,15 @@
-PROJECT_NAME = onkyoctl
-MAIN = ./cmd/$(PROJECT_NAME)
-BINDIR = ./bin
-
+NAME    = onkyoctl
+MAIN    = ./cmd/$(NAME)
+BINDIR  = ./bin
+ARMDIR	= $(BINDIR)/linux/arm
 
 build:
 	mkdir -p $(BINDIR)
-	go build -o $(BINDIR)/$(PROJECT_NAME) $(MAIN)
+	go build -o $(BINDIR)/$(NAME) $(MAIN)
+
+arm:
+	mkdir -p $(ARMDIR)
+	env GOOS=linux GOARCH=arm go build -o $(ARMDIR)/$(NAME) $(MAIN)
 
 test:
 	go test
