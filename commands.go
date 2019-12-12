@@ -19,15 +19,15 @@ type ParamType string
 
 const (
 	// OnOff commands accept only on/off as parameter.
-	OnOff        ParamType = "onOff"
+	OnOff ParamType = "onOff"
 	// OnOffToggle commands work like on/off but accept an additional "toggle".
-	OnOffToggle  ParamType = "onOffToggle"
+	OnOffToggle ParamType = "onOffToggle"
 	// Enum based commands expect parameters from a list of values.
-	Enum         ParamType = "enum"
+	Enum ParamType = "enum"
 	// EnumToggle works like Enum but accepts an additional toggle/cycle parameter.
-	EnumToggle   ParamType = "enumToggle"
+	EnumToggle ParamType = "enumToggle"
 	// IntRange accepts an integer value with min and max values.
-	IntRange     ParamType = "intRange"
+	IntRange ParamType = "intRange"
 	// IntRangeEnum accepts integers and additional values from a list.
 	IntRangeEnum ParamType = "intRangeEnum"
 

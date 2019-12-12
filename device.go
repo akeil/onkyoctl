@@ -1,7 +1,6 @@
 package onkyoctl
 
 import (
-	"net"
 	"sync"
 	"time"
 )
@@ -21,15 +20,10 @@ type Device struct {
 	onConnect      func()
 	onDisconnect   func()
 	timeout        int
-	conn           net.Conn
-	send           chan ISCPCommand
-	recv           chan ISCPCommand
 	wait           *sync.WaitGroup
-	reco           *time.Timer
 	autoConnect    bool
 	allowReconnect bool
 	reconnectTime  time.Duration
-	isRunning      bool
 	client         *client
 }
 
@@ -52,12 +46,10 @@ func NewDevice(cfg *Config) *Device {
 		commands:       commands,
 		timeout:        cfg.ConnectTimeout,
 		wait:           &sync.WaitGroup{},
-		send:           make(chan ISCPCommand, 16),
-		recv:           make(chan ISCPCommand, 16),
 		autoConnect:    cfg.AutoConnect,
 		allowReconnect: cfg.AllowReconnect,
 		reconnectTime:  time.Duration(cfg.ReconnectSeconds) * time.Second,
-		client: newClient(cfg.Host, cfg.Port, log),
+		client:         newClient(cfg.Host, cfg.Port, log),
 	}
 
 	d.client.handler = d.handleReceived
@@ -136,22 +128,6 @@ func (d *Device) SendISCP(cmd ISCPCommand) error {
 	return d.client.Send(cmd)
 }
 
-// WaitSend waits for all submitted messages to be sent.
-func (d *Device) WaitSend(timeout time.Duration) {
-	done := make(chan int)
-	go func() {
-		defer close(done)
-		d.wait.Wait()
-	}()
-
-	select {
-	case <-done:
-		return
-	case <-time.After(timeout):
-		return
-	}
-}
-
 func (d *Device) connectionChanged(s ConnectionState) {
 	d.log.Debug("Connection state changed to %q", s)
 	if s == Connected && d.onConnect != nil {
@@ -163,10 +139,10 @@ func (d *Device) connectionChanged(s ConnectionState) {
 		if d.allowReconnect {
 			//TODO: not when we Stop()'ed
 			d.log.Debug("Schedule reconnect")
-		    go func() {
-		        time.Sleep(d.reconnectTime)
-		        d.client.Connect()
-		    }()
+			go func() {
+				time.Sleep(d.reconnectTime)
+				d.client.Connect()
+			}()
 		}
 	}
 }
