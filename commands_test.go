@@ -522,6 +522,6 @@ func TestBasicQuery(t *testing.T) {
 	assertNoErr(t, err)
 	assertEqual(t, actual, ISCPCommand("AMTQSTN"))
 
-	_, err = cs.CreateQuery("unkown")
+	_, err = cs.CreateQuery("unknown")
 	assertErr(t, err)
 }
