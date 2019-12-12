@@ -12,7 +12,7 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	onkyo "akeil.net/akeil/onkyoctl"
+	onkyo "github.com/akeil/onkyoctl"
 )
 
 func main() {
