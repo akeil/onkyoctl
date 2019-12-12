@@ -32,7 +32,7 @@ c.AutoConnect = true            // connect as soon as required
 d := onkyoctl.NewDevice(c)
 
 d.SendCommand("volume", 25)     // will automatically connect
-d.WaitSend(3 * time.Second)
+d.Stop()
 ```
 
 We still need to `Stop()` the device if we want to disconnect
@@ -151,13 +151,10 @@ It looks like this:
 ```ini
 # IP address of the onkyo device
 # you will probably want to set this
-Host = 192.168.1.123
+Host = 192.168.1.2
 
 # Port number (default: 60128)
 Port = 60123
-
-# Connection timeout in seconds
-ConnectTimout = 10
 
 # Reconnect after connection loss?
 AllowReconnect = false
@@ -170,26 +167,6 @@ AutoConnect = false
 When used as a library, the `Config` struct is used to configure a `Device`.
 Use `ReadConfig(path)` to populate it from an *.ini* file or set individual
 options directly.
-
-## Connection Issues
-At least the one unit this was tested on would only hold *one* TCP connection
-at a time. This means, when you connect to the device while another client is
-already connected, the connection to the *other* client will be closed.
-Likewise, when another client connects, we will lose our connection.
-
-This may become a problem for long-running processes which require a constant
-connection to monitor the device.
-We have two options to deal with this:
-
-`AutoConnect`: when set to *true*, the `Device` will attempt to reconnect
-as soon as a message needs to be sent.
-
-`AllowReconnect`: after we lose connection, waits for `ReconnectSeconds` and
-then attempts to reconnect.
-Use with care - if other clients behave the same way.
-
-The `OnConnected` and `OnDisconnected` are called when the connection status
-changes.
 
 ## Similar Projects
 

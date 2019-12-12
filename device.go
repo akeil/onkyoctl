@@ -119,7 +119,7 @@ func (d *Device) Query(name string) error {
 func (d *Device) SendISCP(cmd ISCPCommand, timeout time.Duration) error {
 	if d.autoConnect {
 		// if already connected, this does nothing
-		d.client.Connect()
+		d.Start()
 	}
 	d.client.WaitConnect(timeout)
 
