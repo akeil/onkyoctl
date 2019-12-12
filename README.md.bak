@@ -102,7 +102,7 @@ If you have other clients that need a constant connection to the receiver,
 this will not work.
 
 ## Command Line Usage
-The command line tool supports three sub commands.
+The command line tool supports three subcommands.
 
 The default command is `do` and you do not need to spell it out.
 It takes a space-separated list of <command> <param> pairs and sends these

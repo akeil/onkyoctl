@@ -1,0 +1,19 @@
+personal_ws-1.1 en 18
+AllowReconnect
+AutoConnect
+NewDefaultConfig
+NewDevice
+OnConnected
+OnDisconnected
+OnMessage
+OnkyoCTL
+ReadConfig
+ReconnectSeconds
+SendCommand
+ctrl
+func
+ini
+onkyo
+onkyoctl
+param
+struct
