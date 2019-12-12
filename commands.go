@@ -224,28 +224,18 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 	// conversion
 	var numeric float64
 	switch val := raw.(type) {
-	case int:
-		numeric = float64(val)
-	case int8:
-		numeric = float64(val)
-	case int16:
-		numeric = float64(val)
-	case int32:
-		numeric = float64(val)
-	case int64:
-		numeric = float64(val)
-	case uint:
-		numeric = float64(val)
-	case uint8:
-		numeric = float64(val)
-	case uint16:
-		numeric = float64(val)
-	case uint32:
-		numeric = float64(val)
-	case uint64:
-		numeric = float64(val)
-	case float32:
-		numeric = float64(val)
+	case int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32:
+		numeric, _ = val.(float64)
 	case float64:
 		numeric = val
 
