@@ -69,6 +69,7 @@ func (c *Command) CreateCommand(param interface{}) (ISCPCommand, error) {
 	return ISCPCommand(string(c.Group) + p), nil
 }
 
+// formatParam converts a go value to a string that is used as part of the ISCP Command.
 func (c *Command) formatParam(raw interface{}) (string, error) {
 	switch c.ParamType {
 	case OnOff:
@@ -107,6 +108,7 @@ func (c *Command) ParseParam(raw string) (string, error) {
 	return "", fmt.Errorf("unsupported param type %q", c.ParamType)
 }
 
+// formatOnOff converts an onOff type parameter.
 func formatOnOff(raw interface{}) (string, error) {
 	var result string
 
@@ -259,10 +261,6 @@ func formatIntRange(lower, upper, scale int, raw interface{}) (string, error) {
 	}
 	scaled := numeric * float64(scale)
 	rounded := math.Round(scaled)
-	// rounding should not change the value
-	if rounded != scaled {
-		return "", fmt.Errorf("invalid parameter %q", raw)
-	}
 
 	hex := fmt.Sprintf("%X", int(rounded))
 	if len(hex)%2 != 0 {
