@@ -47,7 +47,7 @@ func ReadConfig(source interface{}) (*Config, error) {
 	}
 
 	if cfg.CommandFile != "" {
-		cmd, err := readCommands(cfg.CommandFile)
+		cmd, err := ReadCommands(cfg.CommandFile)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,9 @@ func ReadConfig(source interface{}) (*Config, error) {
 	return cfg, nil
 }
 
-func readCommands(path string) (CommandSet, error) {
+// ReadCommands loads a CommandSet from a YAML file specified by the given
+// path.
+func ReadCommands(path string) (CommandSet, error) {
 	d, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read commands: %v", err)
