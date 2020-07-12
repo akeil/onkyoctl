@@ -1,4 +1,4 @@
 package onkyoctl
 
 // Version is the version string.
-const Version = "0.4.1"
+const Version = "0.4.2"

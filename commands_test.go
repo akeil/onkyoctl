@@ -314,6 +314,16 @@ func TestFormatIntRange(t *testing.T) {
 	assertNoErr(t, err)
 	assertEqual(t, actual, ISCPCommand("MVL05"))
 
+	// rounding up: 2.4 * 2 = 4.8 ~ 5
+	actual, err = c.CreateCommand("2.4")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL05"))
+
+	// rounding down: 2.1 * 2 = 4.2 ~ 4
+	actual, err = c.CreateCommand("2.1")
+	assertNoErr(t, err)
+	assertEqual(t, actual, ISCPCommand("MVL04"))
+
 	// enum entries
 	actual, err = c.CreateCommand("up")
 	assertNoErr(t, err)

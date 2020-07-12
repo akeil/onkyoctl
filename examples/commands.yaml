@@ -1,0 +1,99 @@
+- name: power
+  group: PWR
+  paramtype: onOff
+
+- name: volume
+  group: MVL
+  paramtype: intRangeEnum
+  lower: 0
+  upper: 100
+  scale: 2
+  lookup:
+    UP:   up
+    DOWN: down
+
+- name: input
+  group: SLI
+  paramtype: enum
+  lookup:
+      00: video-1
+      01: cbl-sat
+      02: game
+      03: aux1
+      04: aux2
+      05: pc
+      06: video7
+      07: extra1
+      08: extra2
+      09: extra3
+      10: dvd
+      11: strm-box
+      20: tv
+      2B: network
+
+- name: mute
+  group: AMT
+  paramtype: onOffToggle
+
+- name: speaker-a
+  group: SPA
+  paramtype: onOff
+
+- name: speaker-b
+  group: SPB
+  paramtype: onOff
+
+- name: dimmer
+  group: DIM
+  paramtype: enum
+  lookup:
+      00: bright
+      01: dim
+      02: dark
+      03: off
+      08: led-off
+
+- name: display
+  group: DIF
+  paramtype: enumToggle
+  lookup:
+      00: default
+      01: listening
+      02: source
+      03: mode-4
+
+- name: listen-mode
+  group: LMD
+  paramtype: enum
+  lookup:
+      00: stereo
+      STEREO: stereo
+      01: direct
+      11: pure
+
+- name: update
+  group: UPD
+  paramtype: enum
+  lookup:
+      00: no-new-firmware
+      01: new-firmware
+
+- name: auto-powerdown
+  group: APD
+  paramtype: enum
+  lookup:
+      00: off
+      01: on
+      UP: cycle
+
+- name: music-optimizer
+  group: MOT
+  paramtype: enum
+  lookup:
+      00: off
+      01: on
+      UP: cycle
+
+- name: network-standby
+  group: NSB
+  paramtype: onOff
