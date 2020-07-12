@@ -58,7 +58,7 @@ func ReadConfig(source interface{}) (*Config, error) {
 }
 
 func readCommands(path string) (CommandSet, error) {
-	d, err := ioutil.ReadFile("data/commands.yaml")
+	d, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read commands: %v", err)
 	}
