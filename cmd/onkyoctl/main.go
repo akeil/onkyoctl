@@ -177,7 +177,9 @@ func setup(logLevel onkyo.LogLevel, cfgPath, host string, port int) *onkyo.Devic
 		cfg.Port = port
 	}
 
-	cfg.Commands = onkyo.BasicCommands()
+	if cfg.Commands == nil {
+		cfg.Commands = onkyo.BasicCommands()
+	}
 
 	device := onkyo.NewDevice(cfg)
 	device.OnMessage(func(name, value string) {
