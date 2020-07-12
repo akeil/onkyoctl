@@ -120,6 +120,7 @@ Some selected commands may be mapped to events:
 | SLI12     | input-select  | tv       | input     |            |
 | SLI20     | input-select  | tape1    | input     |            |
 | SLI21     | input-select  | tape2    | input     |            |
+| SLI2B     | input-select  | network  | input     |            |
 | SLIxx     | input-select  | (more)   | input     |            |
 | SLIQSTN   | input-select  | query    | input     |            |
 | LMD00     | listen-mode   | stereo   |           |            |
