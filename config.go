@@ -2,7 +2,7 @@ package onkyoctl
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/go-ini/ini"
 	"gopkg.in/yaml.v2"
@@ -60,7 +60,7 @@ func ReadConfig(source interface{}) (*Config, error) {
 // ReadCommands loads a CommandSet from a YAML file specified by the given
 // path.
 func ReadCommands(path string) (CommandSet, error) {
-	d, err := ioutil.ReadFile(path)
+	d, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read commands: %v", err)
 	}

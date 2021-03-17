@@ -1,7 +1,7 @@
 package onkyoctl
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 )
@@ -34,10 +34,10 @@ type Logger interface {
 func NewLogger(level LogLevel) Logger {
 	flags := log.Ldate | log.Ltime | log.LUTC
 	l := &basicLogger{
-		debug:   log.New(ioutil.Discard, "D ", flags),
-		info:    log.New(ioutil.Discard, "I ", flags),
-		warning: log.New(ioutil.Discard, "W ", flags),
-		error:   log.New(ioutil.Discard, "E ", flags),
+		debug:   log.New(io.Discard, "D ", flags),
+		info:    log.New(io.Discard, "I ", flags),
+		warning: log.New(io.Discard, "W ", flags),
+		error:   log.New(io.Discard, "E ", flags),
 	}
 
 	if level <= Debug {
