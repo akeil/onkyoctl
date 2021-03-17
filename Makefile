@@ -11,6 +11,10 @@ arm:
 	mkdir -p $(ARMDIR)
 	env GOOS=linux GOARCH=arm go build -o $(ARMDIR)/$(NAME) $(MAIN)
 
+fmt:
+	gofmt -w *.go
+	gofmt -w */*/*.go
+
 test:
 	go test
 
