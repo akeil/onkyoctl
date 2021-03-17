@@ -6,8 +6,7 @@ import (
 )
 
 func TestISCPFormat(t *testing.T) {
-	var command ISCPCommand
-	command = "PWR01"
+	command := ISCPCommand("PWR01")
 	msg := NewISCPMessage(command)
 	s := msg.Format()
 	assertEqual(t, s, "!1PWR01\r\n")
@@ -148,7 +147,7 @@ func TestEISCPParse(t *testing.T) {
 	assertErr(t, err)
 
 	// magic ok, header length ok, missing payload length
-	eiscp, err = ParseEISCP([]byte{
+	_, err = ParseEISCP([]byte{
 		0x49, 0x53, 0x43, 0x50, // ISCP
 		0x00, 0x00, 0x00, 0x10, // 16
 		0x00, 0x00, 0x00, 0x00, // 0
@@ -158,7 +157,7 @@ func TestEISCPParse(t *testing.T) {
 	assertErr(t, err)
 
 	// magic ok, header length ok, invalid payload length
-	eiscp, err = ParseEISCP([]byte{
+	_, err = ParseEISCP([]byte{
 		0x49, 0x53, 0x43, 0x50, // ISCP
 		0x00, 0x00, 0x00, 0x10, // 16
 		0x00, 0x00, 0x00, 0x0C, // 12

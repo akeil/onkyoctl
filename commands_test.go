@@ -5,8 +5,7 @@ import (
 )
 
 func TestISCPSplit(t *testing.T) {
-	var command ISCPCommand
-	command = "PWR01"
+	command := ISCPCommand("PWR01")
 
 	group, param := SplitISCP(command)
 	assertEqual(t, group, ISCPGroup("PWR"))
